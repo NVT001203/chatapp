@@ -43,13 +43,13 @@ googleRouter.get("/callback", async (req, res) => {
                 user_id: user.id,
                 email: googleUser.email,
             });
-            await addRefreshToken(client, {
+            await updateRefreshToken(client, {
                 user_id: user.id,
                 token: refresh_token,
             });
             return res.status(200).json({
                 code: 200,
-                message: "Success",
+                status: "success",
                 elements: {
                     access_token: `Bearer ${access_token}`,
                     refresh_token: `Bearer ${refresh_token}`,
@@ -76,7 +76,7 @@ googleRouter.get("/callback", async (req, res) => {
             });
             res.status(200).json({
                 code: 200,
-                message: "Success",
+                status: "success",
                 elements: {
                     access_token: `Bearer ${access_token}`,
                     refresh_token: `Bearer ${refresh_token}`,
@@ -89,6 +89,7 @@ googleRouter.get("/callback", async (req, res) => {
     } catch (err) {
         res.status(200).json({
             code: 500,
+            status: "error",
             message: err.message,
         });
     }

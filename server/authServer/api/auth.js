@@ -28,6 +28,7 @@ authRouter.post("/login", async (req, res) => {
         if (!email || !password) {
             return res.status(200).json({
                 code: 400,
+                status: "error",
                 message: "Please provide email and password",
             });
         } else {
@@ -44,11 +45,11 @@ authRouter.post("/login", async (req, res) => {
                 });
                 const { display_name, avatar_url } = await getPublicInfo(
                     client,
-                    { email }
+                    { user_id: user.id }
                 );
                 return res.status(200).json({
                     code: 200,
-                    message: "Success",
+                    status: "sucess",
                     elements: {
                         access_token: `Bearer ${access_token}`,
                         refresh_token: `Bearer ${refresh_token}`,
@@ -60,6 +61,7 @@ authRouter.post("/login", async (req, res) => {
             } else {
                 return res.status(200).json({
                     code: 401,
+                    status: "error",
                     message: "Password is incorrect",
                 });
             }
@@ -67,6 +69,7 @@ authRouter.post("/login", async (req, res) => {
     } catch (err) {
         return res.status(200).json({
             code: 500,
+            status: "error",
             message:
                 err.message == "Update failed!" ? "Server error" : err.message,
         });
@@ -79,6 +82,7 @@ authRouter.post("/register", async (req, res) => {
         if (!email || !password) {
             return res.status(200).json({
                 code: 400,
+                status: "error",
                 message: "Please provide email and password",
             });
         } else {
@@ -86,6 +90,7 @@ authRouter.post("/register", async (req, res) => {
             if (user) {
                 return res.status(200).json({
                     code: 400,
+                    status: "error",
                     message: "Email already exists",
                 });
             } else {
@@ -107,7 +112,7 @@ authRouter.post("/register", async (req, res) => {
                 });
                 res.status(200).json({
                     code: 200,
-                    message: "Success",
+                    status: "Success",
                     elements: {
                         access_token: `Bearer ${access_token}`,
                         refresh_token: `Bearer ${refresh_token}`,
@@ -121,6 +126,7 @@ authRouter.post("/register", async (req, res) => {
     } catch (err) {
         return res.status(200).json({
             code: 500,
+            status: "error",
             message:
                 err.message == "Update failed!" ? "Server error" : err.message,
         });
@@ -129,10 +135,11 @@ authRouter.post("/register", async (req, res) => {
 
 authRouter.get("/get_access_token", async (req, res) => {
     try {
-        const bearer_token = req.headers["refresh_token"];
+        const bearer_token = req.headers["authorization"];
         if (!bearer_token) {
             return res.status(200).json({
                 code: 401,
+                status: "error",
                 message: "No token provided",
             });
         } else {
@@ -152,7 +159,7 @@ authRouter.get("/get_access_token", async (req, res) => {
                 });
                 return res.status(200).json({
                     code: 200,
-                    message: "Success",
+                    status: "sucess",
                     elements: {
                         access_token: `Bearer ${access_token}`,
                         refresh_token: `Bearer ${refresh_token}`,
@@ -163,6 +170,7 @@ authRouter.get("/get_access_token", async (req, res) => {
     } catch (err) {
         return res.status(200).json({
             code: 401,
+            status: "error",
             message:
                 err.message == "No token provided"
                     ? err.message

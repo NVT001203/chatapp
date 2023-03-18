@@ -1,3 +1,6 @@
+import bcrypt from "bcrypt";
+import { generatePasswordHash } from "./hash.js";
+
 export const addRefreshToken = async (db, { token, user_id }) => {
     await db.query(`
         create table if not exists refresh_tokens(
@@ -60,28 +63,45 @@ export const getPrivateInfo = async (db, { id, email }) => {
     }
 };
 
-export const deleteUser = async (db, { user_id }) => {
-    const user = await db.query(`
-        delete from users where user_id = '${user_id}';
-    `);
-    if (user.rowCount == 1) return true;
-    else throw new Error("Delete failed!");
+export const deleteUser = async (db, { user_id, password }) => {
+    const passwordHash = (await getPrivateInfo(db, { id: user_id })).password;
+    console.log(passwordHash);
+    if (!bcrypt.compareSync(password, passwordHash)) {
+        throw new Error("Password is incorrect");
+    } else {
+        const user = await db.query(`
+            delete from users where id = '${user_id}';
+        `);
+        const refresh_tokens = await db.query(`
+            delete from refresh_tokens where user_id = '${user_id}';`);
+        if (user.rowCount == 1) return true;
+        else throw new Error("Delete failed!");
+    }
 };
 
 export const updateEmail = async (db, { user_id, email }) => {
     const email_updated = await db.query(`
         update users set email='${email}' 
-        where user_id = '${user_id}';
+        where id = '${user_id}';
     `);
     if (email_updated.rowCount == 1) return true;
     else throw new Error("Update failed!");
 };
 
-export const updatePassword = async (db, { user_id, password }) => {
-    const password_updated = await db.query(`
-        update users set password='${password}' 
-        where user_id = '${user_id}';
-    `);
-    if (password_updated.rowCount == 1) return true;
-    else throw new Error("Update failed!");
+export const updatePassword = async (
+    db,
+    { user_id, password, new_password }
+) => {
+    const passwordHash = (await getPrivateInfo(db, { id: user_id })).password;
+    if (!bcrypt.compareSync(password, passwordHash)) {
+        throw new Error("Password is incorrect");
+    } else {
+        const new_passowrdHash = generatePasswordHash(new_password);
+        const password_updated = await db.query(`
+            update users set password='${new_passowrdHash}' 
+            where id = '${user_id}';
+        `);
+        if (password_updated.rowCount == 1) return true;
+        else throw new Error("Update failed!");
+    }
 };

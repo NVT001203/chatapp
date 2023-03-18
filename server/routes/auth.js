@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import { handleError } from "../helpers/handleError.js";
 
 dotenv.config({
     path: `${process.cwd()}/.env.global`,
@@ -7,9 +8,13 @@ dotenv.config({
 
 export const auth = (req, res, next) => {
     try {
-        const bearer_token = req.headers["Authorization"];
+        const bearer_token = req.headers["authorization"];
         if (!bearer_token) {
-            res.status(200).json({ code: 401, message: "No token provided" });
+            res.status(401).json({
+                code: 401,
+                status: "error",
+                message: "No token provided",
+            });
         } else {
             const token = bearer_token.split(" ")[1];
             const access_token_secret = process.env.ACCESS_TOKEN_SECRET;
@@ -18,6 +23,6 @@ export const auth = (req, res, next) => {
             next();
         }
     } catch (e) {
-        res.status(200).json({ code: 401, message: e.message });
+        return handleError(e, res);
     }
 };

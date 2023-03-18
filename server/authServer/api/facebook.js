@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { addRefreshToken, getPrivateInfo } from "../../controllers/auth.js";
+import {
+    addRefreshToken,
+    getPrivateInfo,
+    updateRefreshToken,
+} from "../../controllers/auth.js";
 import {
     generateAccessToken,
     generateRefreshToken,
@@ -35,13 +39,13 @@ facebookRouter.get("/callback", async (req, res) => {
                 user_id: user.id,
                 email: facebookUser.email,
             });
-            await addRefreshToken(client, {
+            await updateRefreshToken(client, {
                 user_id: user.id,
                 token: refresh_token,
             });
             return res.status(200).json({
                 code: 200,
-                message: "Success",
+                status: "sucess",
                 elements: {
                     access_token: `Bearer ${access_token}`,
                     refresh_token: `Bearer ${refresh_token}`,
@@ -74,7 +78,7 @@ facebookRouter.get("/callback", async (req, res) => {
             });
             res.status(200).json({
                 code: 200,
-                message: "Success",
+                status: "Success",
                 elements: {
                     access_token: `Bearer ${access_token}`,
                     refresh_token: `Bearer ${refresh_token}`,
@@ -88,6 +92,7 @@ facebookRouter.get("/callback", async (req, res) => {
     } catch (err) {
         res.status(200).json({
             code: 500,
+            status: "error",
             message: err.message,
         });
     }

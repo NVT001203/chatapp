@@ -15,7 +15,8 @@ export const createUser = async (
             display_name bytea, 
             oauth_id varchar,
             avatar_url varchar, 
-            chats uuid[] default '{}'
+            chats uuid[] default '{}',
+            hidden_chats uuid[] default '{}'
         ); 
     `);
     const user = await db.query(
@@ -33,9 +34,8 @@ export const createUserOauth = async (
     db,
     { email, display_name, avatar_url, oauth_id }
 ) => {
-    try {
-        const id = uuidv4();
-        await db.query(`
+    const id = uuidv4();
+    await db.query(`
         create table if not exists users(
             id text primary key, 
             email varchar unique not null, 
@@ -43,21 +43,19 @@ export const createUserOauth = async (
             display_name bytea, 
             oauth_id varchar,
             avatar_url varchar, 
-            chats uuid[] default '{}'
+            chats uuid[] default '{}',
+            hidden_chats uuid[] default '{}'
         ); 
     `);
-        const user = await db.query(
-            `
+    const user = await db.query(
+        `
         insert into users(id, email, display_name, avatar_url, oauth_id)
             values ($1, $2, $3, $4, $5)
             returning id;
         `,
-            [id, email, encoder.encode(display_name), avatar_url, oauth_id]
-        );
-        return user.rows[0];
-    } catch (e) {
-        throw new Error("Something went wrong");
-    }
+        [id, email, encoder.encode(display_name), avatar_url, oauth_id]
+    );
+    return user.rows[0];
 };
 
 export const getPublicInfo = async (db, { user_id }) => {
@@ -96,7 +94,7 @@ export const getChats = async (db, { user_id }) => {
 export const hiddenChat = async (db, { user_id, chat_id }) => {
     const chats = await db.query(`
         update users set chats = array_remove(chats, '${chat_id}'), 
-        hidden_chats=array_appen(chats, '${chat_id}')
+        hidden_chats=array_append(hidden_chats, '${chat_id}')
         where id = '${user_id}'
         returning chats;
     `);
@@ -126,9 +124,21 @@ export const addChat = async (db, { user_id, chat_id }) => {
 };
 export const removeChat = async (db, { user_id, chat_id }) => {
     const chats = await db.query(`
-        update users set chats = array_remove('${chat_id}')
-        where id = '${user_id}';
+        update users set chats = array_remove(chats, '${chat_id}')
+        where id = '${user_id}'
+        returning chats;
     `);
     if (chats.rowCount == 1) return { chats };
     else throw new Error("Remove failed!");
+};
+
+export const addSocketId = async (db, { user_id, id }) => {
+    const socket_id = await db.query(`
+        update users set socket_id = '${id}' where id='${user_id}';
+    `);
+};
+export const removeSocketId = async (db, { user_id }) => {
+    const socket_id = await db.query(`
+        update users set socket_id = null where id='${user_id}';
+    `);
 };
