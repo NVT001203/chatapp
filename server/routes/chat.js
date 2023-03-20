@@ -7,6 +7,7 @@ import {
     createChat,
     createGroupChat,
     getAdmins,
+    getAllMembers,
     removeMember,
     setBackground,
     setGroupName,
@@ -52,9 +53,10 @@ chatRouter.post("/create_group", async (req, res) => {
     }
 });
 
-chatRouter.put("/add_members", async (req, res) => {
+chatRouter.put("/add_members/:chat_id", async (req, res) => {
     try {
-        const { chat_id, members } = req.body;
+        const chat_id = req.params.id;
+        const { members } = req.body;
         let n = members.length;
         while (n-- > 0) {
             await addChat(client, { chat_id, user_id: members[n] });
@@ -70,10 +72,11 @@ chatRouter.put("/add_members", async (req, res) => {
     }
 });
 
-chatRouter.put("/add_admins", async (req, res) => {
+chatRouter.put("/add_admins/:chat_id", async (req, res) => {
     try {
         const { user_id } = req.user;
-        const { chat_id, members } = req.body;
+        const chat_id = req.params.chat_id;
+        const { members } = req.body;
         const { admins } = await getAdmins(client, { chat_id });
         if (!admins.includes(user_id)) throw new Error("User is not admin");
         {
@@ -92,24 +95,25 @@ chatRouter.put("/add_admins", async (req, res) => {
     }
 });
 
-chatRouter.get("/get_AdminList", async (req, res) => {
-    try {
-        const { chat_id } = req.body;
-        const admins = await getAdmins(client, { chat_id });
-        res.status(200).json({
-            code: 200,
-            status: "success",
-            elements: admins,
-        });
-    } catch (e) {
-        return handleError(e, res);
-    }
-});
+// chatRouter.get("/get_AdminList", async (req, res) => {
+//     try {
+//         const { chat_id } = req.body;
+//         const admins = await getAdmins(client, { chat_id });
+//         res.status(200).json({
+//             code: 200,
+//             status: "success",
+//             elements: admins,
+//         });
+//     } catch (e) {
+//         return handleError(e, res);
+//     }
+// });
 
-chatRouter.delete("/remove_member", async (req, res) => {
+chatRouter.delete("/remove_member/:chat_id", async (req, res) => {
     try {
+        const chat_id = req.params.chat_id;
         const { user_id } = req.user;
-        const { chat_id, member } = req.body;
+        const { member } = req.body;
         const { admins } = await getAdmins(client, { chat_id });
         if (admins.includes(user_id)) {
             const members = await removeMember(client, {
@@ -128,10 +132,14 @@ chatRouter.delete("/remove_member", async (req, res) => {
     }
 });
 
-chatRouter.put("/set_groupName", async (req, res) => {
+chatRouter.put("/set_groupName/:chat_id", async (req, res) => {
     try {
+        const chat_id = req.params.chat_id;
         const { user_id } = req.user;
-        const { chat_id, name } = req.body;
+        const { members } = await getAllMembers(client, { chat_id });
+        if (!members.includes(chat_id))
+            throw new Error("User can only set name your group");
+        const { name } = req.body;
         const group = await setGroupName(client, {
             chat_id,
             name,
@@ -146,9 +154,14 @@ chatRouter.put("/set_groupName", async (req, res) => {
     }
 });
 
-chatRouter.put("/set_groupBackground", async (req, res) => {
+chatRouter.put("/set_groupBackground/:chat_id", async (req, res) => {
     try {
-        const { chat_id, background_image } = req.body;
+        const chat_id = req.params.chat_id;
+        const { user_id } = req.user;
+        const { members } = await getAllMembers(client, { chat_id });
+        if (!members.includes)
+            throw new Error("User can only set background your group");
+        const { background_image } = req.body;
         const group = await setBackground(client, {
             chat_id,
             background_image,
@@ -157,6 +170,23 @@ chatRouter.put("/set_groupBackground", async (req, res) => {
             code: 200,
             status: "success",
             elements: group,
+        });
+    } catch (e) {
+        return handleError(e, res);
+    }
+});
+
+chatRouter.put("/get_members/:chat_id", async (req, res) => {
+    try {
+        const chat_id = req.params.chat_id;
+        const { user_id } = req.user;
+        const { members } = await getAllMembers(client, { chat_id });
+        if (!members.includes)
+            throw new Error("User can only get members your group");
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: members,
         });
     } catch (e) {
         return handleError(e, res);

@@ -15,7 +15,11 @@ import {
     getFacebookUserData,
 } from "../Oauth/facebook.js";
 import { client } from "../../db/db.config.js";
+import dotenv from "dotenv";
 
+dotenv.config({
+    path: `${process.cwd()}/.env.global`,
+});
 export const facebookRouter = Router();
 
 facebookRouter.get("/", (req, res) => {
@@ -43,24 +47,13 @@ facebookRouter.get("/callback", async (req, res) => {
                 user_id: user.id,
                 token: refresh_token,
             });
-            return res.status(200).json({
-                code: 200,
-                status: "sucess",
-                elements: {
-                    access_token: `Bearer ${access_token}`,
-                    refresh_token: `Bearer ${refresh_token}`,
-                    user_id: user.id,
-                    display_name: publicInfo.display_name,
-                    avatar_url: publicInfo.avatar_url,
-                },
-            });
+            return res
+                .cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                })
+                .redirect(`${process.env.CLIENT_URL}/fetch_user`);
         } else {
-            console.log({
-                email: facebookUser.email,
-                display_name: `${facebookUser.first_name} ${facebookUser.last_name}`,
-                avatar_url: facebookUser.picture.data.url,
-                oauth_id: facebookUser.id,
-            });
             const { id } = await createUserOauth(client, {
                 email: facebookUser.email,
                 display_name: `${facebookUser.first_name} ${facebookUser.last_name}`,
@@ -76,18 +69,12 @@ facebookRouter.get("/callback", async (req, res) => {
                 user_id: id,
                 token: refresh_token,
             });
-            res.status(200).json({
-                code: 200,
-                status: "Success",
-                elements: {
-                    access_token: `Bearer ${access_token}`,
-                    refresh_token: `Bearer ${refresh_token}`,
-                    user_id: id,
-                    display_name:
-                        facebookUser.first_name + " " + facebookUser.last_name,
-                    avatar_url: facebookUser.picture.data.url,
-                },
-            });
+            res.status(200)
+                .cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                })
+                .redirect(`${process.env.CLIENT_URL}/fetch_user`);
         }
     } catch (err) {
         res.status(200).json({

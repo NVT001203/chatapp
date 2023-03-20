@@ -1,27 +1,19 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { socket } from "../websocket/socket";
 
 function Home() {
-    useEffect(() => {
-        const connect = () => {
-            socket.on("connect", () => {
-                console.log(`socket id ${socket.id} connected`);
-            });
-            socket.on("disconnect", () => {
-                console.log(`socket id ${socket.id} disconnected`);
-            });
-        };
-        return () => {
-            connect();
-        };
-    }, []);
-
+    const getUser = (e) => {
+        e.preventDefault();
+        const user = sessionStorage.getItem("chatapp-user");
+        console.log(user);
+    };
     return (
         <div>
             Home
             <span>
-                <Link to="/chat">to chat</Link>
+                <button onClick={getUser}>get user</button>
+                <Link to="/register">Register</Link>
+                <Link to="/login">Login</Link>
+                <Link to="/fetch_user">fetch_user</Link>
             </span>
         </div>
     );

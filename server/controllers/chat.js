@@ -112,3 +112,11 @@ export const setBackground = async (db, { chat_id, background_image }) => {
     `);
     return set_background.rows[0];
 };
+
+export const getAllMembers = async (db, { chat_id }) => {
+    const members = await db.query(`
+        select members from chats
+        where id='${chat_id}';
+    `);
+    return members.rows[0];
+};

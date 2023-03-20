@@ -4,12 +4,17 @@ import { oauth2Client } from "../Oauth/google.js";
 import axios from "axios";
 import { createUserOauth, getPublicInfo } from "../../controllers/user.js";
 import { client } from "../../db/db.config.js";
+import { generateRefreshToken } from "../../controllers/hash.js";
 import {
-    generateAccessToken,
-    generateRefreshToken,
-} from "../../controllers/hash.js";
-import { addRefreshToken, getPrivateInfo } from "../../controllers/auth.js";
+    addRefreshToken,
+    getPrivateInfo,
+    updateRefreshToken,
+} from "../../controllers/auth.js";
+import dotenv from "dotenv";
 
+dotenv.config({
+    path: `${process.cwd()}/.env.global`,
+});
 export const googleRouter = Router();
 
 googleRouter.get("/", (req, res) => {
@@ -38,7 +43,6 @@ googleRouter.get("/callback", async (req, res) => {
             const publicInfo = await getPublicInfo(client, {
                 user_id: user.id,
             });
-            const access_token = generateAccessToken({ user_id: user.id });
             const refresh_token = generateRefreshToken({
                 user_id: user.id,
                 email: googleUser.email,
@@ -47,17 +51,12 @@ googleRouter.get("/callback", async (req, res) => {
                 user_id: user.id,
                 token: refresh_token,
             });
-            return res.status(200).json({
-                code: 200,
-                status: "success",
-                elements: {
-                    access_token: `Bearer ${access_token}`,
-                    refresh_token: `Bearer ${refresh_token}`,
-                    user_id: user.id,
-                    display_name: publicInfo.display_name,
-                    avatar_url: publicInfo.avatar_url,
-                },
-            });
+            return res
+                .cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                })
+                .redirect(`${process.env.CLIENT_URL}/fetch_user`);
         } else {
             const { id } = await createUserOauth(client, {
                 email: googleUser.email,
@@ -65,7 +64,6 @@ googleRouter.get("/callback", async (req, res) => {
                 avatar_url: googleUser.picture,
                 oauth_id: googleUser.id,
             });
-            const access_token = generateAccessToken({ user_id: id });
             const refresh_token = generateRefreshToken({
                 user_id: id,
                 email: googleUser.email,
@@ -74,17 +72,12 @@ googleRouter.get("/callback", async (req, res) => {
                 user_id: id,
                 token: refresh_token,
             });
-            res.status(200).json({
-                code: 200,
-                status: "success",
-                elements: {
-                    access_token: `Bearer ${access_token}`,
-                    refresh_token: `Bearer ${refresh_token}`,
-                    user_id: id,
-                    display_name: googleUser.name,
-                    avatar_url: googleUser.picture,
-                },
-            });
+            res.status(200)
+                .cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                })
+                .redirect(`${process.env.CLIENT_URL}/fetch_user`);
         }
     } catch (err) {
         res.status(200).json({

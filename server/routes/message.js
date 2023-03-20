@@ -6,10 +6,11 @@ import { addMessage } from "../controllers/chat.js";
 
 export const messageRouter = Router();
 
-messageRouter.post("/add_message", async (req, res) => {
+messageRouter.post("/:chat_id/add_message", async (req, res) => {
     try {
+        const chat_id = req.params.chat_id;
         const { user_id } = req.user;
-        const { chat_id, text, photo_url, file_url } = req.body;
+        const { text, photo_url, file_url } = req.body;
         const message = await createMessage(client, {
             sender: user_id,
             text,
@@ -30,8 +31,9 @@ messageRouter.post("/add_message", async (req, res) => {
     }
 });
 
-messageRouter.delete("/recall_message", async (req, res) => {
+messageRouter.delete("/:chat_id/recall_message", async (req, res) => {
     try {
+        const chat_id = req.params.chat_id;
         const { message } = req.body;
         const messageRecall = await recallMessge(client, {
             message,

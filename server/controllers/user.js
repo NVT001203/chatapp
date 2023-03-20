@@ -131,14 +131,3 @@ export const removeChat = async (db, { user_id, chat_id }) => {
     if (chats.rowCount == 1) return { chats };
     else throw new Error("Remove failed!");
 };
-
-export const addSocketId = async (db, { user_id, id }) => {
-    const socket_id = await db.query(`
-        update users set socket_id = '${id}' where id='${user_id}';
-    `);
-};
-export const removeSocketId = async (db, { user_id }) => {
-    const socket_id = await db.query(`
-        update users set socket_id = null where id='${user_id}';
-    `);
-};

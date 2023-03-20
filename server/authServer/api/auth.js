@@ -15,6 +15,7 @@ import {
     updateRefreshToken,
 } from "../../controllers/auth.js";
 import { createUser, getPublicInfo } from "../../controllers/user.js";
+import jwt from "jsonwebtoken";
 
 dotenv.config({
     path: `${process.cwd()}/.env.global`,
@@ -33,6 +34,12 @@ authRouter.post("/login", async (req, res) => {
             });
         } else {
             const user = await getPrivateInfo(client, { email });
+            if (!user)
+                res.status(400).json({
+                    status: "error",
+                    code: 400,
+                    message: "User is not exists",
+                });
             if (comparePassword({ password, hash: user.password })) {
                 const access_token = generateAccessToken({ user_id: user.id });
                 const refresh_token = generateRefreshToken({
@@ -49,7 +56,7 @@ authRouter.post("/login", async (req, res) => {
                 );
                 return res.status(200).json({
                     code: 200,
-                    status: "sucess",
+                    status: "success",
                     elements: {
                         access_token: `Bearer ${access_token}`,
                         refresh_token: `Bearer ${refresh_token}`,
@@ -112,7 +119,7 @@ authRouter.post("/register", async (req, res) => {
                 });
                 res.status(200).json({
                     code: 200,
-                    status: "Success",
+                    status: "success",
                     elements: {
                         access_token: `Bearer ${access_token}`,
                         refresh_token: `Bearer ${refresh_token}`,
@@ -175,6 +182,66 @@ authRouter.get("/get_access_token", async (req, res) => {
                 err.message == "No token provided"
                     ? err.message
                     : "Token invalid",
+        });
+    }
+});
+
+authRouter.get("/success", async (req, res) => {
+    const bearer_token = req.cookies["token"];
+    const refresh_token = bearer_token.split(" ")[1];
+    try {
+        res.clearCookie("token");
+        if (!refresh_token) {
+            res.status(403).json({
+                code: 403,
+                status: "error",
+                message: "Forbiden!",
+            });
+        } else {
+            const refresh_token_secret = process.env.REFRESH_TOKEN_SECRET;
+            const { user_id, email } = jwt.verify(
+                refresh_token,
+                refresh_token_secret
+            );
+
+            const { display_name, avatar_url } = await getPublicInfo(client, {
+                user_id,
+            });
+            const access_token = generateAccessToken({ user_id });
+            const refresh_token_update = generateRefreshToken({
+                user_id,
+                email,
+            });
+            const update_token = await updateRefreshToken(client, {
+                user_id,
+                token: refresh_token_update,
+            });
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                elements: {
+                    user_id,
+                    email,
+                    display_name,
+                    avatar_url,
+                    token: {
+                        refresh_token: `Bearer ${refresh_token_update}`,
+                        access_token: `Bearer ${access_token}`,
+                    },
+                },
+            });
+        }
+    } catch (e) {
+        if (e.name == "JsonWebTokenError")
+            re.status(401).json({
+                code: 401,
+                status: "error",
+                message: "Invalid token",
+            });
+        res.status(500).json({
+            code: 500,
+            status: "error",
+            message: "Server error",
         });
     }
 });
