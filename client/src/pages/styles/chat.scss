@@ -1,0 +1,163 @@
+.chat-container {
+    flex-grow: 1;
+    .navbar {
+        display: flex;
+        padding: 30px 20px 16px;
+        align-items: center;
+        border-bottom: 1px solid #f1f1f1;
+        .chat-avatar {
+            width: 52px;
+            height: 52px;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 50%;
+        }
+        .navbar-content {
+            flex-grow: 1;
+            span {
+                font-size: 22px;
+                font-weight: 600;
+                padding: 0 16px;
+                display: inline-block;
+                width: auto;
+            }
+        }
+
+        .more-wrapper {
+            width: 132px;
+            display: flex;
+            padding: 10px 20px;
+            align-items: center;
+            justify-content: space-between;
+
+            .icon {
+                width: 20px;
+                height: 20px;
+                background-repeat: no-repeat;
+                background-size: cover;
+                background-position: center;
+                cursor: pointer;
+            }
+            .video {
+                background-image: url("../../imgs/video.png");
+                width: 24px;
+                height: 24px;
+            }
+            .phone {
+                background-image: url("../../imgs/telephone.png");
+            }
+            .more {
+                background-image: url("../../imgs/more.png");
+            }
+        }
+    }
+    .messages {
+        height: calc(100% - 100px - 111px);
+        width: 100%;
+        padding: 0 20px 20px;
+        background-color: #f1f1f1;
+        display: flex;
+        gap: 20px;
+        flex-direction: column-reverse;
+        overflow-y: scroll;
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        .message {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            .avatar {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background-position: center;
+                background-size: cover;
+                background-repeat: no-repeat;
+            }
+
+            .text-message {
+                margin-top: 10px;
+                display: block;
+                font-size: 14px;
+                padding: 10px;
+                max-width: 400px;
+                overflow-wrap: break-word;
+                background-color: rgb(33, 114, 68, 0.8);
+                border-radius: 10px;
+                border-top-left-radius: 0;
+                color: #fff;
+            }
+            img {
+                max-width: 400px;
+                max-height: 500px;
+            }
+        }
+        .self {
+            align-self: flex-end;
+            .text-message {
+                border-top-right-radius: 0;
+                border-top-left-radius: 10px;
+            }
+        }
+    }
+
+    .input-container {
+        width: 100%;
+        padding: 30px 0;
+        display: flex;
+        justify-content: center;
+        .input-wrapper {
+            display: flex;
+            width: 88%;
+            background-color: #f1f1f1;
+            border-radius: 16px;
+            input {
+                border: none;
+                background-color: transparent;
+                padding: 16px;
+                flex-grow: 1;
+                font-size: 16px;
+                outline: none;
+                color: #000;
+                &::placeholder {
+                    font-size: 16px;
+                }
+            }
+            .wrapper {
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                justify-content: space-between;
+                gap: 10px;
+                .send-wrapper {
+                    width: 36px;
+                    height: 20px;
+                    border-left: 2px solid #959595;
+                    display: flex;
+                    align-items: center;
+                    justify-content: end;
+                }
+                .icon {
+                    width: 18px;
+                    height: 18px;
+                    background-repeat: no-repeat;
+                    background-size: cover;
+                    background-position: center;
+                    cursor: pointer;
+                }
+                .micro {
+                    background-image: url("../../imgs/microphone.png");
+                }
+                .image {
+                    background-image: url("../../imgs/image.png");
+                }
+                .send {
+                    background-image: url("../../imgs/send.png");
+                }
+            }
+        }
+    }
+}

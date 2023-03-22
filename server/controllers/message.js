@@ -1,26 +1,28 @@
-import { v4 as uuidv4 } from "uuid";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export const createMessage = async (
     db,
-    { sender, text, photo_url, file_url }
+    { sender, chat_id, text, photo_url, file_url }
 ) => {
     const id = uuidv4();
     await db.query(`
         create table if not exists messages (
-            id text primary key,
+            id uuid default uuid_generate_v4() primary key, 
+            chat_id text not null,
             sender text not null,
             text bytea,
             photo_url varchar,
             file_url varchar,
             recall boolean default false,
             created_at timestamp);
+        create index if not exists idx_chat_id
+        on messages(chat_id);
     `);
     const encode_text = text ? encoder.encoder(text) : null;
     const new_message = await db.query(`
-        insert into messages (id, sender, text, photo_url, file_url, created_at)
-        values ('${id}', '${sender}', '${encode_text || null}', '${
+        insert into messages (chat_id, sender, text, photo_url, file_url, created_at)
+        values ('${chat_id}', '${sender}', '${encode_text || null}', '${
         photo_url || null
     }',
         '${file_url || null}', current_timestamp)

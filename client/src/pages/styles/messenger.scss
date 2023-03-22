@@ -1,0 +1,91 @@
+.messenger-container {
+    display: flex;
+    width: 90%;
+    height: 90%;
+    background-color: #fff;
+    border-radius: 20px;
+    .navigate {
+        width: 6%;
+        height: 100%;
+        background-color: #0b4725;
+        position: relative;
+        border-top-left-radius: 20px;
+        border-bottom-left-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 0;
+        align-items: center;
+        justify-content: space-between;
+        .icon {
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            filter: invert(100%);
+            object-fit: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+        .tabs {
+            background-image: url("../../imgs/tabs.png");
+        }
+        .category {
+            background-image: url("../../imgs/category.png");
+        }
+        .messenger {
+            background-image: url("../../imgs/messenger.png");
+        }
+        .friends {
+            background-image: url("../../imgs/friends.png");
+        }
+        .notification {
+            background-image: url("../../imgs/notification.png");
+        }
+        .setting {
+            background-image: url("../../imgs/setting.png");
+        }
+        .first-item {
+            height: 300px;
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            .navigate-item {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+        .second-item {
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            .setting {
+                display: flex;
+                align-items: center;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .user-account {
+                display: flex;
+                border-top: 2px solid #fff;
+                padding-top: 30px;
+                img {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                }
+            }
+        }
+        &::before {
+            content: "";
+            position: absolute;
+            height: 40px;
+            border-left: 3px solid #fff;
+            left: 0;
+            top: 30px;
+        }
+    }
+}

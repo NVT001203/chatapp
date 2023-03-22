@@ -1,36 +1,44 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { loginSuccess } from "../config/apiRoute";
 import { ToastContainer, toast } from "react-toastify";
 import Loading from "../imgs/Loading.gif";
 import "./styles/loading.scss";
+import { privateInstance } from "../config/axiosConfig";
+import { AuthContext } from "../contexts/authContext";
+import { socket } from "../websocket/socket";
 
 function FetchUser() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    const { setCurrentUser } = useContext(AuthContext);
     let fetching = true;
 
     useEffect(() => {
-        const setUser = async () => {
+        const setUser = () => {
             fetching = false;
-            const { data } = await axios.get(loginSuccess, {
-                withCredentials: true,
-            });
-            if (data.status == "success") {
-                sessionStorage.setItem(
-                    "chatapp-user",
-                    JSON.stringify(data.elements)
-                );
-                setLoading(false);
-                navigate("/");
-            } else {
-                toast("Fetch user failed! Please try again!");
-                setTimeout(() => {
-                    return navigate("/login");
-                }, 5 * 1000);
-                setLoading(false);
-            }
+            privateInstance
+                .get("/success", {
+                    withCredentials: true,
+                })
+                .then(({ data }) => {
+                    console.log(data);
+                    if (data.status == "success") {
+                        const user = {
+                            user_id: data.elements.user_id,
+                            display_name: data.elements.display_name,
+                            email: data.elements.email,
+                            avatar_url: data.elements.avatar_url,
+                        };
+                        setCurrentUser(user);
+                        setLoading(false);
+                        navigate("/messenger");
+                    } else {
+                        setLoading(false);
+                    }
+                })
+                .catch(function (error) {
+                    navigate("/login");
+                });
         };
         fetching && setUser();
     }, []);

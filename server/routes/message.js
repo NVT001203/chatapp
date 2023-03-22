@@ -20,6 +20,7 @@ messageRouter.post("/:chat_id/add_message", async (req, res) => {
         const add_room = await addMessage(client, {
             chat_id,
             message: message.id,
+            updated: message.created_at,
         });
         res.status(200).json({
             code: 200,

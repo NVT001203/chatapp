@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getStorage } from "firebase/storage";
+import env from "../env.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDEVQOmDdZEUEoIUBOwODqNH29D_KxFhG8",
@@ -10,7 +11,6 @@ const firebaseConfig = {
     appId: "1:674917579742:web:e37b02cebcc06136bbbb4f",
     measurementId: "G-1DZWSYTPVJ",
 };
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const storage = getStorage(app);

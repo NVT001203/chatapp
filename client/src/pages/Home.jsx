@@ -1,20 +1,24 @@
-import { Link } from "react-router-dom";
+import { useContext, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../contexts/authContext";
 
 function Home() {
-    const getUser = (e) => {
-        e.preventDefault();
-        const user = sessionStorage.getItem("chatapp-user");
-        console.log(user);
-    };
+    const navigate = useNavigate();
+    const { currentUser } = useContext(AuthContext);
+    useEffect(() => {
+        (() => {
+            if (!currentUser) navigate("/register");
+        })();
+    }, [currentUser]);
+
     return (
         <div>
             Home
-            <span>
-                <button onClick={getUser}>get user</button>
+            <div>
                 <Link to="/register">Register</Link>
                 <Link to="/login">Login</Link>
-                <Link to="/fetch_user">fetch_user</Link>
-            </span>
+                <Link to="/messenger">messenger</Link>
+            </div>
         </div>
     );
 }

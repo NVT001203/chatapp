@@ -1,22 +1,13 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useState } from "react";
 
 export const AuthContext = createContext();
 
-function AuthContextProvider({ chidren }) {
+export const AuthContextProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(undefined);
 
-    useEffect(() => {
-        const setter = () => {
-            setCurrentUser(sessionStorage.getItem("chatapp-user"));
-        };
-        return setter();
-    }, []);
-
     return (
-        <AuthContext.Provider value={currentUser}>
-            {chidren}
+        <AuthContext.Provider value={{ currentUser, setCurrentUser }}>
+            {children}
         </AuthContext.Provider>
     );
-}
-
-export default AuthContextProvider;
+};

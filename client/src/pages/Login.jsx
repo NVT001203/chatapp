@@ -3,25 +3,18 @@ import Google from "../imgs/google.png";
 import Facebook from "../imgs/facebook.png";
 import { ToastContainer, toast } from "react-toastify";
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Loading from "../imgs/Loading.gif";
+import { AuthContext } from "../contexts/authContext";
 
 function Login() {
     const [isLoading, setIsLoading] = useState(false);
-    let loading = false;
+    const { setCurrentUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const notify = (message) => {
         return toast(message);
     };
-    useEffect(() => {
-        const reset_loading = () => {
-            loading = false;
-        };
-        return () => {
-            reset_loading();
-        };
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,11 +25,9 @@ function Login() {
         else if (password.length < 3 || password.length > 8)
             return notify("Password must be between in 3 and 8 letter!");
         // login request
-        loading = true;
         setIsLoading(true);
         const { data } = await axios.post(loginRoute, { email, password });
         if (!data) {
-            loading = false;
             setIsLoading(false);
             return notify("Something went wrong! Please try again.");
         } else {
@@ -47,12 +38,10 @@ function Login() {
                     display_name: data.elements.display_name,
                     user_id: data.elements.user_id,
                 };
-                sessionStorage.setItem("chatapp-user", JSON.stringify(user));
-                loading = false;
+                setCurrentUser(user);
                 setIsLoading(false);
-                navigate("/");
+                navigate("/messenger");
             } else {
-                loading = false;
                 setIsLoading(false);
                 if (data.message == "Password is incorrect")
                     return notify("Password is incorrect");
@@ -92,6 +81,12 @@ function Login() {
                     <div onClick={hanlde_facebook} className="oauth-login">
                         <img src={Facebook} alt="" />
                         <span>Login with facebook</span>
+                    </div>
+                    <div>
+                        <span>
+                            You don't have an account?
+                            <Link to="/register">Register.</Link>
+                        </span>
                     </div>
                     <button className="btn-submit" type="submit">
                         Login

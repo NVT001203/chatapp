@@ -1,23 +1,20 @@
-import { v4 as uuidv4 } from "uuid";
-
 export const createChat = async (db, { user_id, friend_id }) => {
-    const id = uuidv4();
     await db.query(`
         create table if not exists chats(
-            id text primary key, 
+            id uuid default uuid_generate_v4() primary key, 
             name varchar, 
             is_group boolean default false,
-            members text[],
-            admins text[], 
-            messages text[] default '{}', 
+            chat_avatar varchar,
+            members uuid[],
+            admins uuid[], 
             last_message text, 
             background_image varchar,
             updated_at timestamp  
         )
     `);
     const new_chat = await db.query(`
-        insert into chats(id, members, updated_at)
-        values('${id}', '{"${user_id}", "${friend_id}"}', current_timestamp)
+        insert into chats(members, updated_at)
+        values('{"${user_id}", "${friend_id}"}', current_timestamp)
         returning id, messages, members, last_message, is_group,
         background_image, name, updated_at;
     `);
@@ -25,26 +22,25 @@ export const createChat = async (db, { user_id, friend_id }) => {
 };
 
 export const createGroupChat = async (db, { members }) => {
-    const id = uuidv4();
     await db.query(`
         create table if not exists chats(
-            id text primary key, 
+            id uuid default uuid_generate_v4() primary key, 
             name varchar, 
             is_group boolean default false,
+            chat_avatar varchar,
             members text[],
             admins text[], 
-            messages text[] default '{}', 
             last_message text, 
             background_image varchar,
             updated_at timestamp  
         )
     `);
     const new_group = await db.query(`
-        insert into chats(id, members, admins, is_group, updated_at)
-            values('${id}', '{"${members.join(`", "`)}"}', '{"${
+        insert into chats(members, admins, is_group, updated_at)
+            values('{"${members.join(`", "`)}"}', '{"${
         members[0]
     }"}', true, current_timestamp)
-        returning id, messages, members, last_message, is_group,
+        returning id, members, last_message, is_group,
         background_image, name, updated_at;
     `);
     return new_group.rows[0];
@@ -85,10 +81,10 @@ export const removeMember = async (db, { chat_id, user_id }) => {
     return remove_members.rows[0];
 };
 
-export const addMessage = async (db, { chat_id, message }) => {
+export const addMessage = async (db, { chat_id, message, updated }) => {
     const add_message = await db.query(`
-        update chats set messages=array_prepend ('${message}', messages), 
-        updated_at=current_timestamp, 
+        update chats set
+        updated_at='${updated}',
         last_message='${message}'
         where id='${chat_id}' returning updated_at, last_message;
     `);

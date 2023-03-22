@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -6,10 +5,10 @@ export const createUser = async (
     db,
     { email, password, display_name, avatar_url }
 ) => {
-    const id = uuidv4();
     await db.query(`
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
         create table if not exists users(
-            id text primary key, 
+            id uuid default uuid_generate_v4() primary key, 
             email varchar unique not null, 
             password varchar, 
             display_name bytea, 
@@ -21,11 +20,11 @@ export const createUser = async (
     `);
     const user = await db.query(
         `
-        insert into users(id, email, password, display_name, avatar_url)
-        values ($1, $2, $3, $4, $5)
+        insert into users(email, password, display_name, avatar_url)
+        values ($1, $2, $3, $4)
         returning id;
     `,
-        [id, email, password, encoder.encode(display_name), avatar_url]
+        [email, password, encoder.encode(display_name), avatar_url]
     );
     return user.rows[0];
 };
@@ -34,10 +33,10 @@ export const createUserOauth = async (
     db,
     { email, display_name, avatar_url, oauth_id }
 ) => {
-    const id = uuidv4();
     await db.query(`
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
         create table if not exists users(
-            id text primary key, 
+            id uuid default uuid_generate_v4() primary key, 
             email varchar unique not null, 
             password varchar, 
             display_name bytea, 
@@ -49,11 +48,11 @@ export const createUserOauth = async (
     `);
     const user = await db.query(
         `
-        insert into users(id, email, display_name, avatar_url, oauth_id)
-            values ($1, $2, $3, $4, $5)
+        insert into users(email, display_name, avatar_url, oauth_id)
+            values ($1, $2, $3, $4)
             returning id;
         `,
-        [id, email, encoder.encode(display_name), avatar_url, oauth_id]
+        [email, encoder.encode(display_name), avatar_url, oauth_id]
     );
     return user.rows[0];
 };

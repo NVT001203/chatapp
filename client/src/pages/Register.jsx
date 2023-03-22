@@ -1,23 +1,24 @@
 import "./styles/form.scss";
 import Contact from "../imgs/contact.png";
-import { useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebase/firebase";
 import axios from "axios";
-import { socket } from "../websocket/socket";
 import { registerRoute } from "../config/apiRoute";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../contexts/authContext.js";
+
 import Loading from "../imgs/Loading.gif";
 
 function Register() {
-    const [credential, setCredential] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const notify = (message) => {
         toast(message);
     };
+    const { setCurrentUser } = useContext(AuthContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,7 +49,6 @@ function Register() {
             password,
             avatar_url,
         };
-        setCredential(user_info);
         const { data } = await axios.post(registerRoute, user_info);
         console.log(data);
         if (data) {
@@ -58,16 +58,8 @@ function Register() {
                     return notify("Email already exists");
                 return notify("Something went wrong! Please try again.");
             } else {
-                const user = {
-                    user_id: data.elements.user_id,
-                    display_name: display_name,
-                    email: email,
-                };
-                socket.emit("add-user", {
-                    user_id: data.elements.user_id,
-                });
-                sessionStorage.setItem("chatapp-user", JSON.stringify(user));
-                return navigate("/");
+                setCurrentUser(user_info);
+                return navigate("/messenger");
             }
         } else {
             setIsLoading(false);
@@ -106,6 +98,12 @@ function Register() {
                             name="file"
                         />
                         <div className="random-avatar">Random avatar</div>
+                    </div>
+                    <div>
+                        <span>
+                            You have an account?
+                            <Link to="/login">Login.</Link>
+                        </span>
                     </div>
                     <button
                         className="btn-submit"

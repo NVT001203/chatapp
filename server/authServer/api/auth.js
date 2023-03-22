@@ -187,50 +187,42 @@ authRouter.get("/get_access_token", async (req, res) => {
 });
 
 authRouter.get("/success", async (req, res) => {
-    const bearer_token = req.cookies["token"];
-    const refresh_token = bearer_token.split(" ")[1];
     try {
+        const bearer_token = req.cookies["token"];
+        const refresh_token = bearer_token.split(" ")[1];
         res.clearCookie("token");
-        if (!refresh_token) {
-            res.status(403).json({
-                code: 403,
-                status: "error",
-                message: "Forbiden!",
-            });
-        } else {
-            const refresh_token_secret = process.env.REFRESH_TOKEN_SECRET;
-            const { user_id, email } = jwt.verify(
-                refresh_token,
-                refresh_token_secret
-            );
+        const refresh_token_secret = process.env.REFRESH_TOKEN_SECRET;
+        const { user_id, email } = jwt.verify(
+            refresh_token,
+            refresh_token_secret
+        );
 
-            const { display_name, avatar_url } = await getPublicInfo(client, {
-                user_id,
-            });
-            const access_token = generateAccessToken({ user_id });
-            const refresh_token_update = generateRefreshToken({
+        const { display_name, avatar_url } = await getPublicInfo(client, {
+            user_id,
+        });
+        const access_token = generateAccessToken({ user_id });
+        const refresh_token_update = generateRefreshToken({
+            user_id,
+            email,
+        });
+        const update_token = await updateRefreshToken(client, {
+            user_id,
+            token: refresh_token_update,
+        });
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: {
                 user_id,
                 email,
-            });
-            const update_token = await updateRefreshToken(client, {
-                user_id,
-                token: refresh_token_update,
-            });
-            res.status(200).json({
-                code: 200,
-                status: "success",
-                elements: {
-                    user_id,
-                    email,
-                    display_name,
-                    avatar_url,
-                    token: {
-                        refresh_token: `Bearer ${refresh_token_update}`,
-                        access_token: `Bearer ${access_token}`,
-                    },
+                display_name,
+                avatar_url,
+                token: {
+                    refresh_token: `Bearer ${refresh_token_update}`,
+                    access_token: `Bearer ${access_token}`,
                 },
-            });
-        }
+            },
+        });
     } catch (e) {
         if (e.name == "JsonWebTokenError")
             re.status(401).json({
@@ -238,10 +230,20 @@ authRouter.get("/success", async (req, res) => {
                 status: "error",
                 message: "Invalid token",
             });
-        res.status(500).json({
-            code: 500,
-            status: "error",
-            message: "Server error",
-        });
+        else if (
+            e.message == "Cannot read properties of undefined (reading 'split')"
+        )
+            res.status(403).json({
+                code: 403,
+                status: "error",
+                message: "Token not avaiable",
+            });
+        else {
+            res.status(500).json({
+                code: 500,
+                status: "error",
+                message: "Server error",
+            });
+        }
     }
 });
