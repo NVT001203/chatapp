@@ -10,6 +10,7 @@ import {
 } from "../../controllers/hash.js";
 import {
     addRefreshToken,
+    checkUserExists,
     getPrivateInfo,
     getRefreshToken,
     updateRefreshToken,
@@ -23,11 +24,23 @@ dotenv.config({
 
 export const authRouter = Router();
 
+authRouter.post("/get_userExists", async (req, res) => {
+    const { email } = req.body;
+    if (await checkUserExists(client, { email }))
+        res.status(200).json({ status: "success", code: 200, message: "OK" });
+    else
+        res.status(200).json({
+            status: "success",
+            code: 200,
+            message: "Email already exists",
+        });
+});
+
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.status(200).json({
+            return res.status(400).json({
                 code: 400,
                 status: "error",
                 message: "Please provide email and password",
@@ -54,19 +67,22 @@ authRouter.post("/login", async (req, res) => {
                     client,
                     { user_id: user.id }
                 );
-                return res.status(200).json({
+                res.cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                });
+                res.status(200).json({
                     code: 200,
                     status: "success",
                     elements: {
                         access_token: `Bearer ${access_token}`,
-                        refresh_token: `Bearer ${refresh_token}`,
                         display_name,
                         avatar_url,
                         user_id: user.id,
                     },
                 });
             } else {
-                return res.status(200).json({
+                res.status(401).json({
                     code: 401,
                     status: "error",
                     message: "Password is incorrect",
@@ -74,7 +90,7 @@ authRouter.post("/login", async (req, res) => {
             }
         }
     } catch (err) {
-        return res.status(200).json({
+        res.status(500).json({
             code: 500,
             status: "error",
             message:
@@ -87,7 +103,7 @@ authRouter.post("/register", async (req, res) => {
     try {
         const { email, password, display_name, avatar_url } = req.body;
         if (!email || !password) {
-            return res.status(200).json({
+            res.status(400).json({
                 code: 400,
                 status: "error",
                 message: "Please provide email and password",
@@ -95,7 +111,7 @@ authRouter.post("/register", async (req, res) => {
         } else {
             const user = await getPrivateInfo(client, { email });
             if (user) {
-                return res.status(200).json({
+                return res.status(400).json({
                     code: 400,
                     status: "error",
                     message: "Email already exists",
@@ -117,12 +133,19 @@ authRouter.post("/register", async (req, res) => {
                     user_id: id,
                     token: refresh_token,
                 });
+                console.log({
+                    refresh_token,
+                    access_token,
+                });
+                res.cookie("token", `Bearer ${refresh_token}`, {
+                    httpOnly: true,
+                    secure: true,
+                });
                 res.status(200).json({
                     code: 200,
                     status: "success",
                     elements: {
                         access_token: `Bearer ${access_token}`,
-                        refresh_token: `Bearer ${refresh_token}`,
                         user_id: id,
                         display_name,
                         avatar_url,
@@ -131,7 +154,7 @@ authRouter.post("/register", async (req, res) => {
             }
         }
     } catch (err) {
-        return res.status(200).json({
+        res.status(500).json({
             code: 500,
             status: "error",
             message:
@@ -142,9 +165,9 @@ authRouter.post("/register", async (req, res) => {
 
 authRouter.get("/get_access_token", async (req, res) => {
     try {
-        const bearer_token = req.headers["authorization"];
+        const bearer_token = req.cookies["token"];
         if (!bearer_token) {
-            return res.status(200).json({
+            res.status(401).json({
                 code: 401,
                 status: "error",
                 message: "No token provided",
@@ -156,26 +179,30 @@ authRouter.get("/get_access_token", async (req, res) => {
             });
             if ((await getRefreshToken(client, { user_id })) == refresh_token) {
                 const access_token = generateAccessToken({ user_id });
-                const refresh_token = generateRefreshToken({
+                const refresh_token_updated = generateRefreshToken({
                     user_id,
                     email,
                 });
                 await updateRefreshToken(client, {
                     user_id,
-                    token: refresh_token,
+                    token: refresh_token_updated,
                 });
-                return res.status(200).json({
-                    code: 200,
-                    status: "sucess",
-                    elements: {
-                        access_token: `Bearer ${access_token}`,
-                        refresh_token: `Bearer ${refresh_token}`,
-                    },
-                });
+                res.cookie("token", `Bearer ${refresh_token_updated}`, {
+                    httpOnly: true,
+                    secure: true,
+                })
+                    .status(200)
+                    .json({
+                        code: 200,
+                        status: "sucess",
+                        elements: {
+                            access_token: `Bearer ${access_token}`,
+                        },
+                    });
             } else throw new Error();
         }
     } catch (err) {
-        return res.status(200).json({
+        res.status(401).json({
             code: 401,
             status: "error",
             message:
@@ -186,43 +213,44 @@ authRouter.get("/get_access_token", async (req, res) => {
     }
 });
 
-authRouter.get("/success", async (req, res) => {
+authRouter.get("/get_user", async (req, res) => {
     try {
         const bearer_token = req.cookies["token"];
         const refresh_token = bearer_token.split(" ")[1];
-        res.clearCookie("token");
         const refresh_token_secret = process.env.REFRESH_TOKEN_SECRET;
         const { user_id, email } = jwt.verify(
             refresh_token,
             refresh_token_secret
         );
-
-        const { display_name, avatar_url } = await getPublicInfo(client, {
-            user_id,
-        });
-        const access_token = generateAccessToken({ user_id });
-        const refresh_token_update = generateRefreshToken({
-            user_id,
-            email,
-        });
-        const update_token = await updateRefreshToken(client, {
-            user_id,
-            token: refresh_token_update,
-        });
-        res.status(200).json({
-            code: 200,
-            status: "success",
-            elements: {
+        if ((await getRefreshToken(client, { user_id })) == refresh_token) {
+            const { display_name, avatar_url } = await getPublicInfo(client, {
+                user_id,
+            });
+            const access_token = generateAccessToken({ user_id });
+            const refresh_token_update = generateRefreshToken({
                 user_id,
                 email,
-                display_name,
-                avatar_url,
-                token: {
-                    refresh_token: `Bearer ${refresh_token_update}`,
-                    access_token: `Bearer ${access_token}`,
-                },
-            },
-        });
+            });
+            const update_token = await updateRefreshToken(client, {
+                user_id,
+                token: refresh_token_update,
+            });
+            res.cookie("token", `Bearer ${refresh_token_update}`, {
+                httpOnly: true,
+                secure: true,
+            })
+                .status(200)
+                .json({
+                    code: 200,
+                    status: "success",
+                    elements: {
+                        user_id,
+                        display_name,
+                        avatar_url,
+                        access_token: `Bearer ${access_token}`,
+                    },
+                });
+        } else throw new Error("Token not found");
     } catch (e) {
         if (e.name == "JsonWebTokenError")
             re.status(401).json({
@@ -237,6 +265,12 @@ authRouter.get("/success", async (req, res) => {
                 code: 403,
                 status: "error",
                 message: "Token not avaiable",
+            });
+        else if (e.message == "Token not found")
+            res.status(404).json({
+                code: 404,
+                status: "error",
+                message: "Token not found",
             });
         else {
             res.status(500).json({

@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import React from "react";
 import FetchUser from "./pages/FetchUser";
 import Messenger from "./pages/Messenger";
+import LoadingError from "./pages/ErrorLoad";
 
 function App() {
     return (
@@ -16,6 +17,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/fetch_user" element={<FetchUser />} />
                     <Route path="/messenger" element={<Messenger />} />
+                    <Route path="/loading_error" element={<LoadingError />} />
                     <Route path="/" element={<Home />} />
                 </Routes>
             </BrowserRouter>

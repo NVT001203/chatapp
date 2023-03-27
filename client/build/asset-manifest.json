@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/static/css/main.7e551b91.css",
+    "main.js": "/static/js/main.94d0f809.js",
+    "static/media/LoadingError.gif": "/static/media/LoadingError.62675f63ecb924cf89b2.gif",
+    "static/media/Loading.gif": "/static/media/Loading.f490563b8f3a02065a56.gif",
+    "static/media/welcome.jpeg": "/static/media/welcome.e68ca34b595865f31961.jpeg",
+    "static/media/google.png": "/static/media/google.e12914ad8afda3f6f2e8.png",
+    "static/media/setting.png": "/static/media/setting.d253e01d5104acb9826b.png",
+    "static/media/message.png": "/static/media/message.634357c2a5ad1a7674d3.png",
+    "static/media/telephone.png": "/static/media/telephone.81dd445af3f5a64aa31a.png",
+    "static/media/contact.png": "/static/media/contact.8f539a539ab997c93ecc.png",
+    "static/media/close.png": "/static/media/close.785aa15ad2021922596e.png",
+    "static/media/friends.png": "/static/media/friends.942a8422c62c4f955e2a.png",
+    "static/media/messenger.png": "/static/media/messenger.486394c09645523153cf.png",
+    "static/media/notification.png": "/static/media/notification.b6e1be4108a318e88bd9.png",
+    "static/media/search.png": "/static/media/search.ca7aae46e8e72453beed.png",
+    "static/media/send.png": "/static/media/send.deecc6e72cd2c633ec83.png",
+    "index.html": "/index.html",
+    "main.7e551b91.css.map": "/static/css/main.7e551b91.css.map",
+    "main.94d0f809.js.map": "/static/js/main.94d0f809.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7e551b91.css",
+    "static/js/main.94d0f809.js"
+  ]
+}

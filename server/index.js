@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import { router } from "./routes/index.js";
 import { websocketConnect } from "./websocket/socket.js";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 
 dotenv.config({
@@ -11,6 +12,7 @@ dotenv.config({
 const app = express();
 const port = process.env.PORT;
 
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.set("view engine", "ejs");
 app.set("views", `${process.cwd()}/public`);

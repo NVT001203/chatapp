@@ -2,12 +2,12 @@ import Search from "./search";
 import Chats from "./chats";
 import "../pages/styles/sidebar.scss";
 
-function Sidebar() {
+function Sidebar({ toast }) {
     return (
         <div className="sidebar">
             <h2>Nvt chat</h2>
-            <Search />
-            <Chats />
+            <Search toast={toast} />
+            <Chats toast={toast} />
         </div>
     );
 }

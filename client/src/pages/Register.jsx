@@ -6,9 +6,10 @@ import "react-toastify/dist/ReactToastify.css";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebase/firebase";
 import axios from "axios";
-import { registerRoute } from "../config/apiRoute";
+import { checkEmail } from "../config/apiRoute";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/authContext.js";
+import { publicInstance, authInstance } from "../config/axiosConfig";
 
 import Loading from "../imgs/Loading.gif";
 
@@ -40,29 +41,41 @@ function Register() {
         else if (!file) return notify("Avatar is required!");
         // upload image
         setIsLoading(true);
-        const storageRef = ref(storage, email);
-        const uploadTask = await uploadBytesResumable(storageRef, file);
-        const avatar_url = await getDownloadURL(storageRef);
-        const user_info = {
-            email,
-            display_name,
-            password,
-            avatar_url,
-        };
-        const { data } = await axios.post(registerRoute, user_info);
-        console.log(data);
-        if (data) {
-            if (data.status != "success") {
-                setIsLoading(false);
-                if (data.message == "Email already exists")
-                    return notify("Email already exists");
-                return notify("Something went wrong! Please try again.");
-            } else {
-                setCurrentUser(user_info);
-                return navigate("/messenger");
+        try {
+            const checkEmailExists = await axios.post(checkEmail, { email });
+            if (
+                checkEmailExists.data.status == "success" &&
+                checkEmailExists.data.message == "Email already exists"
+            ) {
+                throw new Error("Email already exists");
             }
-        } else {
+            const storageRef = ref(storage, email);
+            const uploadTask = await uploadBytesResumable(storageRef, file);
+            const avatar_url = await getDownloadURL(storageRef);
+            const user_info = {
+                email,
+                display_name,
+                password,
+                avatar_url,
+            };
+            const res = await authInstance.post("/register", user_info);
+            setCurrentUser({
+                user_id: res.data.elements.user_id,
+                display_name: res.data.elements.display_name,
+                avatar_url: res.data.elements.avatar_url,
+            });
+            publicInstance.defaults.headers.common["Authorization"] =
+                res.data.elements.access_token;
+            authInstance.defaults.headers.common["Authorization"] =
+                res.data.elements.access_token;
+            return navigate("/messenger");
+        } catch (e) {
             setIsLoading(false);
+            if (
+                e.response?.data?.message === "Email already exists" ||
+                e.message === "Email already exists"
+            )
+                return notify("Email already exists");
             return notify("Something went wrong! Please try again.");
         }
     };
@@ -96,6 +109,7 @@ function Register() {
                             type="file"
                             id="file"
                             name="file"
+                            accept="image/png, image/jpeg"
                         />
                         <div className="random-avatar">Random avatar</div>
                     </div>

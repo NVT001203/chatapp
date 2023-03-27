@@ -4,12 +4,14 @@ import { handleError } from "../helpers/handleError.js";
 import {
     addAdmins,
     addMembers,
+    checkChatExists,
     createChat,
     createGroupChat,
     getAdmins,
     getAllMembers,
     removeMember,
     setBackground,
+    setChatAvatar,
     setGroupName,
 } from "../controllers/chat.js";
 import { addChat, removeChat } from "../controllers/user.js";
@@ -20,14 +22,27 @@ chatRouter.post("/create_chat", async (req, res) => {
     try {
         const { user_id } = req.user;
         const friend_id = req.body.user_id;
-        const chat = await createChat(client, { user_id, friend_id });
-        await addChat(client, { chat_id: chat.id, user_id });
-        await addChat(client, { chat_id: chat.id, user_id: friend_id });
-        res.status(200).json({
-            code: 200,
-            status: "success",
-            elements: chat,
+        const chatExists = await checkChatExists(client, {
+            users_id: [user_id, friend_id],
         });
+
+        if (chatExists.exists)
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                message: "Chat is exists",
+                elements: chatExists.chat,
+            });
+        else {
+            const chat = await createChat(client, { user_id, friend_id });
+            await addChat(client, { chat_id: chat.id, user_id });
+            await addChat(client, { chat_id: chat.id, user_id: friend_id });
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                elements: chat,
+            });
+        }
     } catch (e) {
         return handleError(e, res);
     }
@@ -187,6 +202,24 @@ chatRouter.put("/get_members/:chat_id", async (req, res) => {
             code: 200,
             status: "success",
             elements: members,
+        });
+    } catch (e) {
+        return handleError(e, res);
+    }
+});
+
+chatRouter.put("/set_chatAvatar/:chat_id", async (req, res) => {
+    try {
+        const chat_id = req.params.chat_id;
+        const { chat_avatar } = req.body;
+        const { user_id } = req.user;
+        const { members } = await getAllMembers(client, { chat_id });
+        if (!members.includes)
+            throw new Error("User can only get members your group");
+        const changed = await setChatAvatar(client, { chat_id, chat_avatar });
+        res.status(200).json({
+            code: 200,
+            status: (changed && "success") || "error",
         });
     } catch (e) {
         return handleError(e, res);

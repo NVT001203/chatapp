@@ -5,7 +5,7 @@ export const addRefreshToken = async (db, { token, user_id }) => {
     await db.query(`
         create table if not exists refresh_tokens(
             user_id varchar(255) not null,
-            token varchar(255) not null
+            token varchar(255)
         );
     `);
     const token_added = await db.query(`
@@ -21,15 +21,18 @@ export const getRefreshToken = async (db, { user_id }) => {
         select token from refresh_tokens 
         where user_id = '${user_id}';
     `);
-    return token.rows[0].token;
+    return token.rows[0]?.token;
 };
 
 export const updateRefreshToken = async (db, { user_id, token }) => {
-    const token_updated = await db.query(`
+    const token_updated = await db.query(
+        `
         update refresh_tokens 
-        set token = '${token}' 
+        set token = $1
         where user_id = '${user_id}';
-    `);
+    `,
+        [token]
+    );
     if (token_updated.rowCount == 1) return true;
     else throw new Error("Update failed!");
 };
@@ -103,5 +106,18 @@ export const updatePassword = async (
         `);
         if (password_updated.rowCount == 1) return true;
         else throw new Error("Update failed!");
+    }
+};
+
+export const checkUserExists = async (db, { email }) => {
+    try {
+        const emailExists = await db.query(`
+        select email from users where email='${email}';
+    `);
+        if (Object.keys(emailExists.rows).length > 0) return false;
+        else return true;
+    } catch (e) {
+        if (e.message == `relation "users" does not exist`) return true;
+        else throw new Error("Server error");
     }
 };

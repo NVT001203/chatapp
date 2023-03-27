@@ -1,6 +1,3 @@
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
 export const createMessage = async (
     db,
     { sender, chat_id, text, photo_url, file_url }
@@ -11,7 +8,7 @@ export const createMessage = async (
             id uuid default uuid_generate_v4() primary key, 
             chat_id text not null,
             sender text not null,
-            text bytea,
+            text varchar,
             photo_url varchar,
             file_url varchar,
             recall boolean default false,
@@ -19,10 +16,9 @@ export const createMessage = async (
         create index if not exists idx_chat_id
         on messages(chat_id);
     `);
-    const encode_text = text ? encoder.encoder(text) : null;
     const new_message = await db.query(`
         insert into messages (chat_id, sender, text, photo_url, file_url, created_at)
-        values ('${chat_id}', '${sender}', '${encode_text || null}', '${
+        values ('${chat_id}', '${sender}', '${text || null}', '${
         photo_url || null
     }',
         '${file_url || null}', current_timestamp)
@@ -50,9 +46,18 @@ export const getMessage = async (db, { message_id }) => {
     const message = await db.query(`
         select * from messages where id='${message_id}'
     `);
-    const result = {
-        ...message.rows[0],
-        text: decoder.decode(message.rows[0].text),
-    };
-    return result;
+    return message.rows;
+};
+
+export const getMessages = async (db, { messages_id }) => {
+    try {
+        const messages = await db.query(`
+        select * from messages where id::text in 
+        (select unnest(array['${messages_id.join(`', '`)}'])); 
+    `);
+        return messages.rows;
+    } catch (e) {
+        if (e.message == `relation "messages" does not exist`) return [];
+        throw new Error(e.message);
+    }
 };

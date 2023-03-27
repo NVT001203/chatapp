@@ -7,11 +7,13 @@ import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Loading from "../imgs/Loading.gif";
 import { AuthContext } from "../contexts/authContext";
+import { publicInstance, authInstance } from "../config/axiosConfig";
 
 function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const { setCurrentUser } = useContext(AuthContext);
     const navigate = useNavigate();
+
     const notify = (message) => {
         return toast(message);
     };
@@ -32,13 +34,15 @@ function Login() {
             return notify("Something went wrong! Please try again.");
         } else {
             if (data.status == "success") {
-                const user = {
-                    email,
-                    avatar_url: data.elements.avatar_url,
-                    display_name: data.elements.display_name,
+                setCurrentUser({
                     user_id: data.elements.user_id,
-                };
-                setCurrentUser(user);
+                    display_name: data.elements.display_name,
+                    avatar_url: data.elements.avatar_url,
+                });
+                publicInstance.defaults.headers.common["Authorization"] =
+                    data.elements.access_token;
+                authInstance.defaults.headers.common["Authorization"] =
+                    data.elements.access_token;
                 setIsLoading(false);
                 navigate("/messenger");
             } else {

@@ -1,13 +1,13 @@
 .messenger-container {
+    width: 90vw;
+    height: 90vh;
     display: flex;
-    width: 90%;
-    height: 90%;
     background-color: #fff;
     border-radius: 20px;
     .navigate {
         width: 6%;
         height: 100%;
-        background-color: #0b4725;
+        background-image: linear-gradient(to bottom, #cc2b5e, #753a88);
         position: relative;
         border-top-left-radius: 20px;
         border-bottom-left-radius: 20px;
@@ -43,6 +43,9 @@
         }
         .setting {
             background-image: url("../../imgs/setting.png");
+        }
+        .log-out {
+            background-image: url("../../imgs/logout.png");
         }
         .first-item {
             height: 300px;

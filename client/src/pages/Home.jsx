@@ -4,13 +4,21 @@ import { AuthContext } from "../contexts/authContext";
 
 function Home() {
     const navigate = useNavigate();
-    const { currentUser } = useContext(AuthContext);
+    const { currentUser, getUser, setCurrentUser } = useContext(AuthContext);
     useEffect(() => {
         (() => {
-            if (!currentUser) navigate("/register");
+            if (Object.keys(currentUser).length == 0) {
+                getUser().then((user) => {
+                    if (user) setCurrentUser(user);
+                    else {
+                        navigate("/login");
+                    }
+                });
+            } else if (!currentUser) {
+                navigate("/login");
+            }
         })();
-    }, [currentUser]);
-
+    }, []);
     return (
         <div>
             Home
@@ -18,6 +26,13 @@ function Home() {
                 <Link to="/register">Register</Link>
                 <Link to="/login">Login</Link>
                 <Link to="/messenger">messenger</Link>
+                <button
+                    onClick={() => {
+                        console.log(currentUser);
+                    }}
+                >
+                    click 1234
+                </button>
             </div>
         </div>
     );

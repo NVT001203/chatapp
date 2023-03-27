@@ -11,6 +11,7 @@ function Input() {
                         id="image"
                         name="image"
                         style={{ display: "none" }}
+                        accept="image/png, image/gif, image/jpeg"
                     />
                     <div className="send-wrapper">
                         <div className="icon send"></div>

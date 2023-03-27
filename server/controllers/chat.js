@@ -15,8 +15,8 @@ export const createChat = async (db, { user_id, friend_id }) => {
     const new_chat = await db.query(`
         insert into chats(members, updated_at)
         values('{"${user_id}", "${friend_id}"}', current_timestamp)
-        returning id, messages, members, last_message, is_group,
-        background_image, name, updated_at;
+        returning id, members, last_message, is_group,
+        background_image, admins, name, updated_at, chat_avatar;
     `);
     return new_chat.rows[0];
 };
@@ -115,4 +115,47 @@ export const getAllMembers = async (db, { chat_id }) => {
         where id='${chat_id}';
     `);
     return members.rows[0];
+};
+
+export const setChatAvatar = async (db, { chat_id, chat_avatar }) => {
+    const changed = db.query(`
+        update chats set chat_avatar='${chat_avatar}'
+        where id='${chat_id}';
+    `);
+    return changed.rowCount == 1 ? true : false;
+};
+
+export const getChats = async (db, { user_id }) => {
+    try {
+        const chats = await db.query(`
+            select * from chats where id in (select unnest(chats) from users where id='${user_id}');
+        `);
+        return chats.rows;
+    } catch (e) {
+        if (e.message == `relation "chats" does not exist`) return [];
+        else throw new Error(e.message);
+    }
+};
+
+export const checkChatExists = async (db, { users_id }) => {
+    try {
+        const chat = await db.query(`
+            select * from chats where 
+            members='{"${users_id.join(`", "`)}"}';
+        `);
+        if (chat.rows[0]) {
+            return { exists: true, chat: chat.rows[0] };
+        } else {
+            const arr2 = users_id.reverse();
+            const chat2 = await db.query(`
+                select * from chats where 
+                members='{"${arr2.join(`", "`)}"}';
+            `);
+            if (chat2.rows[0]) return { exists: true, chat: chat2.rows[0] };
+            else return false;
+        }
+    } catch (e) {
+        if (e.message == `relation "chats" does not exist`) return false;
+        else throw new Error(e.message);
+    }
 };

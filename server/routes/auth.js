@@ -8,7 +8,7 @@ dotenv.config({
 
 export const auth = (req, res, next) => {
     try {
-        const bearer_token = req.headers["authorization"];
+        const bearer_token = req.headers.authorization;
         if (!bearer_token) {
             res.status(401).json({
                 code: 401,

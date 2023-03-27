@@ -1,0 +1,14 @@
+.error_loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    img {
+        width: 400px;
+    }
+    h3 {
+        font-size: 24px;
+        color: rgb(194, 108, 108);
+    }
+}

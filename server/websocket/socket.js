@@ -24,7 +24,6 @@ export const websocketConnect = (server) => {
         });
         socket.on("disconnect", () => {
             delete users_online[socket.id];
-            console.log(users_online);
             console.log("user disconnected");
         });
     });

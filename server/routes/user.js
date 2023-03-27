@@ -4,8 +4,10 @@ import {
     addChat,
     displayChat,
     getPublicInfo,
+    getUsers,
     hiddenChat,
     removeChat,
+    searchUsers,
     updatePublicInfo,
 } from "../controllers/user.js";
 import { handleError } from "../helpers/handleError.js";
@@ -14,8 +16,10 @@ import {
     getPrivateInfo,
     updateEmail,
     updatePassword,
+    updateRefreshToken,
 } from "../controllers/auth.js";
-import { removeMember } from "../controllers/chat.js";
+import { getChats, removeMember } from "../controllers/chat.js";
+import { getMessages } from "../controllers/message.js";
 
 export const userRouter = Router();
 
@@ -182,5 +186,82 @@ userRouter.put("/:id/leave_group", async (req, res) => {
         });
     } catch (e) {
         return handleError(e, res);
+    }
+});
+
+userRouter.get("/:id/get_resource", async (req, res) => {
+    try {
+        const req_id = req.params.id;
+        const { user_id } = req.user;
+        if (req_id != user_id)
+            throw new Error("User can only get your resource on its own");
+        const chats = await getChats(client, { user_id });
+        let messages_id = [];
+        let members = [];
+        for (const chat of chats) {
+            messages_id.push(chat.last_message);
+            members = [...members, ...chat.members];
+        }
+        const membersSet = new Set(members);
+        members = Array.from(membersSet);
+        messages_id = messages_id.filter((e) => e);
+        let messages = [];
+        let users = [];
+        if (messages_id.length > 0)
+            messages = await getMessages(client, { messages_id });
+        if (members.length > 0)
+            users = await getUsers(client, { users_id: members });
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: { chats, messages, users },
+        });
+    } catch (e) {
+        handleError(e, res);
+    }
+});
+
+userRouter.get("/search_users/:display_name", async (req, res) => {
+    try {
+        const display_name = req.params.display_name;
+        const { user_id } = req.user;
+        let friends = await searchUsers(client, { display_name });
+        friends = friends.filter((e) => e.id != user_id);
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: friends,
+        });
+    } catch (e) {
+        res.status(500).json({
+            code: 500,
+            status: "error",
+            message: "Server error!",
+        });
+    }
+});
+
+userRouter.delete("/:id/sign_out", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { user_id } = req.user;
+        if (id == user_id) {
+            const signout = await updateRefreshToken(client, {
+                user_id,
+                token: null,
+            });
+            res.clearCookie("token");
+            res.status(200).json({
+                code: 200,
+                status: "success",
+            });
+        }
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({
+            code: 500,
+            status: "error",
+            message: "Server error!",
+        });
     }
 });
