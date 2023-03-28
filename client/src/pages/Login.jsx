@@ -8,10 +8,12 @@ import { Link, useNavigate } from "react-router-dom";
 import Loading from "../imgs/Loading.gif";
 import { AuthContext } from "../contexts/authContext";
 import { publicInstance, authInstance } from "../config/axiosConfig";
+import { StoreContext } from "../contexts/StoreContext";
 
 function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const { setCurrentUser } = useContext(AuthContext);
+    const { dispatch } = useContext(StoreContext);
     const navigate = useNavigate();
 
     const notify = (message) => {
@@ -28,16 +30,25 @@ function Login() {
             return notify("Password must be between in 3 and 8 letter!");
         // login request
         setIsLoading(true);
-        const { data } = await axios.post(loginRoute, { email, password });
+        const { data } = await axios.post(
+            loginRoute,
+            { email, password },
+            { withCredentials: true }
+        );
         if (!data) {
             setIsLoading(false);
             return notify("Something went wrong! Please try again.");
         } else {
             if (data.status == "success") {
-                setCurrentUser({
+                const user = {
                     user_id: data.elements.user_id,
                     display_name: data.elements.display_name,
                     avatar_url: data.elements.avatar_url,
+                };
+                setCurrentUser(user);
+                dispatch({
+                    type: "ADD_USERS",
+                    users: { [user.user_id]: user },
                 });
                 publicInstance.defaults.headers.common["Authorization"] =
                     data.elements.access_token;

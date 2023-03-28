@@ -1,15 +1,22 @@
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { publicInstance } from "../config/axiosConfig";
 import { AuthContext } from "../contexts/authContext";
 import { ChatContext } from "../contexts/chatContext";
 import { StoreContext } from "../contexts/StoreContext";
 import SearchIcon from "../imgs/search.png";
+import Group from "../imgs/group.png";
+import AddUser from "../imgs/user.png";
+import RemoveUser from "../imgs/removeUser.png";
+import SearchUser from "../imgs/searchUser.png";
 
 function Search({ toast }) {
     const [searched, setSearched] = useState(false);
     const [displayName, setDisplayName] = useState("");
     const [friends, setFriends] = useState([]);
+    const [groupMembers, setGroupMembers] = useState([]);
+    const [addUser, setAddUser] = useState(false);
+    const searchRef = useRef();
     const { dispatch } = useContext(StoreContext);
     const { refreshToken } = useContext(AuthContext);
     const { setCurrentChat } = useContext(ChatContext);
@@ -22,7 +29,7 @@ function Search({ toast }) {
                 .then(({ data }) => {
                     const friendsObj = {};
                     for (const friend of data.elements) {
-                        friendsObj[friend.id] = friend;
+                        friendsObj[friend.user_id] = friend;
                     }
                     dispatch({
                         type: "ADD_USERS",
@@ -42,7 +49,7 @@ function Search({ toast }) {
                                 setFriends(res.data.elements);
                                 const friendsObj = {};
                                 for (const friend of res.data.elements) {
-                                    friendsObj[friend.id] = friend;
+                                    friendsObj[friend.user_id] = friend;
                                 }
                                 dispatch({
                                     type: "ADD_USERS",
@@ -73,30 +80,34 @@ function Search({ toast }) {
             setSearched(false);
     };
 
+    const handleAddUser = (user_id) => {
+        if (!groupMembers.includes(user_id))
+            setGroupMembers((pre) => [...pre, user_id]);
+        else {
+            setGroupMembers((pre) => pre.filter((id) => id != user_id));
+        }
+    };
+
     const handleCreateChat = async (user_id) => {
         setSearched(false);
         setDisplayName("");
         publicInstance
             .post(`/chat/create_chat`, { user_id })
             .then(({ data }) => {
-                console.log(data);
                 if (data.message == "Chat is exists") {
-                    return setCurrentChat({
-                        id: data.elements.id,
-                        chat_avatar: data.elements.chat_avatar,
-                        name: data.elements.name,
+                    const messages = data.elements.messages;
+                    dispatch({
+                        type: "ADD_MESSAGES",
+                        messages: messages,
                     });
+                    return setCurrentChat(data.elements.chat);
                 }
-                const chatObj = { [data.elements.id]: data.elements };
+                const chatObj = { [data.elements.chat.id]: data.elements.chat };
                 dispatch({
                     type: "ADD_CHATS",
                     chats: chatObj,
                 });
-                setCurrentChat({
-                    id: data.elements.id,
-                    chat_avatar: data.elements.chat_avatar,
-                    name: data.elements.name,
-                });
+                setCurrentChat(data.elements.chat);
             })
             .catch((error) => {
                 const data = error.response.data;
@@ -106,25 +117,23 @@ function Search({ toast }) {
                             const res = await publicInstance.get(
                                 `/user/search_users/${displayName}`
                             );
-                            if (res.data.message == "Chat is exists")
-                                return setCurrentChat({
-                                    id: data.elements.id,
-                                    chat_avatar: data.elements.chat_avatar,
-                                    name: data.elements.name,
+                            if (res.data.message == "Chat is exists") {
+                                const messages = res.data.elements.messages;
+                                dispatch({
+                                    type: "ADD_MESSAGES",
+                                    messages: messages,
                                 });
-
+                                return setCurrentChat(data.elements);
+                            }
                             const chatObj = {
-                                [res.data.elements.id]: res.data.elements,
+                                [res.data.elements.chat.id]:
+                                    res.data.elements.chat,
                             };
                             dispatch({
                                 type: "ADD_CHATS",
                                 chats: chatObj,
                             });
-                            setCurrentChat({
-                                id: data.elements.id,
-                                chat_avatar: data.elements.chat_avatar,
-                                name: data.elements.name,
-                            });
+                            setCurrentChat(data.elements.chat);
                         })
                         .catch((e) => {
                             if (e == "Server error") {
@@ -144,23 +153,91 @@ function Search({ toast }) {
             });
     };
 
+    const handleCreateGroup = async () => {
+        setAddUser(false);
+        setSearched(false);
+        setDisplayName("");
+        if (groupMembers.length >= 2) {
+            try {
+                const { data } = await publicInstance.post(
+                    `/chat/create_group`,
+                    {
+                        members: groupMembers,
+                    }
+                );
+                setCurrentChat(data.chat);
+                const chatObj = { [data.elements.id]: data.elements };
+                dispatch({
+                    type: "ADD_CHATS",
+                    chats: chatObj,
+                });
+            } catch (e) {
+                if (e.response.data.message == "jwt expired") {
+                    refreshToken()
+                        .then(async (d) => {
+                            const { data } = await publicInstance.post(
+                                `/chat/create_group`,
+                                {
+                                    members: groupMembers,
+                                }
+                            );
+                            setCurrentChat(data.chat);
+                            const chatObj = {
+                                [data.elements.id]: data.elements,
+                            };
+                            dispatch({
+                                type: "ADD_CHATS",
+                                chats: chatObj,
+                            });
+                        })
+                        .catch((e) => {
+                            console.log(e);
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        });
+                } else {
+                    toast("Somthing went wrong! Please try again.");
+                }
+            }
+        } else {
+            toast("Group must be equal or greater than 3 members!");
+        }
+    };
+
     return (
         <div className="search">
             <img src={SearchIcon} onClick={(e) => handleKeydown(e, "click")} />
             <input
                 type="text"
-                placeholder="Search..."
+                placeholder={(addUser && "Add to group...") || "Search..."}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 onKeyDown={handleKeydown}
+                ref={searchRef}
+            />
+            <img
+                src={(addUser && SearchUser) || Group}
+                className="add-group"
+                onClick={() => {
+                    setAddUser((pre) => !pre);
+                    searchRef.current.focus();
+                }}
             />
             {searched && (
-                <div className="friends" onBlur={() => setSearched(false)}>
+                <div
+                    className={(!addUser && "friends") || "friends add-user"}
+                    onBlur={() => setSearched(false)}
+                >
                     <span
                         className="x-symbol"
                         onClick={() => {
                             setSearched(false);
                             setDisplayName("");
+                            setGroupMembers([]);
                         }}
                     >
                         ✗
@@ -170,9 +247,11 @@ function Search({ toast }) {
                             return (
                                 <div
                                     className="friend"
-                                    key={friend.id}
+                                    key={friend.user_id}
                                     onClick={() => {
-                                        handleCreateChat(friend.id);
+                                        (!addUser &&
+                                            handleCreateChat(friend.user_id)) ||
+                                            handleAddUser(friend.user_id);
                                     }}
                                 >
                                     <div
@@ -181,14 +260,48 @@ function Search({ toast }) {
                                             backgroundImage: `url(${friend.avatar_url})`,
                                         }}
                                     ></div>
-                                    <span className="friend_name">
+                                    <span
+                                        className={
+                                            (addUser &&
+                                                "friend_name add-icon") ||
+                                            "friend_name"
+                                        }
+                                    >
                                         {friend.display_name}
                                     </span>
+                                    {addUser && (
+                                        <img
+                                            className="group-icon"
+                                            src={
+                                                (groupMembers.includes(
+                                                    friend.user_id
+                                                ) &&
+                                                    RemoveUser) ||
+                                                AddUser
+                                            }
+                                        />
+                                    )}
                                 </div>
                             );
                         })) || (
                         <span className="not-found">User not found!</span>
                     )}
+                </div>
+            )}
+            {addUser && searched && (
+                <div className="group-action">
+                    <button
+                        onClick={() => setGroupMembers([])}
+                        className="back"
+                    >
+                        Back
+                    </button>
+                    <button
+                        onClick={() => handleCreateGroup()}
+                        className="create"
+                    >
+                        Create group
+                    </button>
                 </div>
             )}
         </div>

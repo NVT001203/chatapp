@@ -19,7 +19,7 @@ import {
     updateRefreshToken,
 } from "../controllers/auth.js";
 import { getChats, removeMember } from "../controllers/chat.js";
-import { getMessages } from "../controllers/message.js";
+import { getLastMessages } from "../controllers/message.js";
 
 export const userRouter = Router();
 
@@ -208,7 +208,7 @@ userRouter.get("/:id/get_resource", async (req, res) => {
         let messages = [];
         let users = [];
         if (messages_id.length > 0)
-            messages = await getMessages(client, { messages_id });
+            messages = await getLastMessages(client, { messages_id });
         if (members.length > 0)
             users = await getUsers(client, { users_id: members });
         res.status(200).json({
@@ -226,7 +226,7 @@ userRouter.get("/search_users/:display_name", async (req, res) => {
         const display_name = req.params.display_name;
         const { user_id } = req.user;
         let friends = await searchUsers(client, { display_name });
-        friends = friends.filter((e) => e.id != user_id);
+        friends = friends.filter((e) => e.user_id != user_id);
         res.status(200).json({
             code: 200,
             status: "success",
@@ -257,7 +257,6 @@ userRouter.delete("/:id/sign_out", async (req, res) => {
             });
         }
     } catch (e) {
-        console.log(e);
         res.status(500).json({
             code: 500,
             status: "error",

@@ -68,7 +68,6 @@ export const getPrivateInfo = async (db, { id, email }) => {
 
 export const deleteUser = async (db, { user_id, password }) => {
     const passwordHash = (await getPrivateInfo(db, { id: user_id })).password;
-    console.log(passwordHash);
     if (!bcrypt.compareSync(password, passwordHash)) {
         throw new Error("Password is incorrect");
     } else {

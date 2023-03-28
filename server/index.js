@@ -5,6 +5,7 @@ import { router } from "./routes/index.js";
 import { websocketConnect } from "./websocket/socket.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { client } from "./db/db.config.js";
 
 dotenv.config({
     path: `${process.cwd()}/.env.server`,
@@ -24,8 +25,16 @@ app.use(
 );
 
 app.use("/api", router);
-app.get("/", (req, res) => {
-    res.send("Hello World");
+app.get("/", async (req, res) => {
+    const time = await client.query(`
+        select current_timestamp;
+    `);
+    const date = new Date(time.rows[0].current_timestamp);
+    res.json({
+        date,
+        timestamp: time.rows[0].current_timestamp,
+        hours: date.getHours,
+    });
 });
 
 const server = app.listen(port, () => {

@@ -12,6 +12,7 @@ import { AuthContext } from "../contexts/authContext.js";
 import { publicInstance, authInstance } from "../config/axiosConfig";
 
 import Loading from "../imgs/Loading.gif";
+import { StoreContext } from "../contexts/StoreContext";
 
 function Register() {
     const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +21,7 @@ function Register() {
         toast(message);
     };
     const { setCurrentUser } = useContext(AuthContext);
+    const { dispatch } = useContext(StoreContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -58,11 +60,18 @@ function Register() {
                 password,
                 avatar_url,
             };
-            const res = await authInstance.post("/register", user_info);
-            setCurrentUser({
+            const res = await authInstance.post("/register", user_info, {
+                withCredentials: true,
+            });
+            const user = {
                 user_id: res.data.elements.user_id,
                 display_name: res.data.elements.display_name,
                 avatar_url: res.data.elements.avatar_url,
+            };
+            setCurrentUser(user);
+            dispatch({
+                type: "ADD_USERS",
+                users: { [user.user_id]: user },
             });
             publicInstance.defaults.headers.common["Authorization"] =
                 res.data.elements.access_token;

@@ -58,54 +58,60 @@
                 }
             }
         }
-        .messages {
+        .messages-wrapper {
             height: calc(100% - 100px - 110px);
             width: 100%;
-            padding: 0 20px 20px;
-            background-color: #f1f1f1;
             display: flex;
-            gap: 20px;
-            flex-direction: column-reverse;
-            overflow-y: scroll;
-            &::-webkit-scrollbar {
-                display: none;
-            }
-
-            .message {
+            flex-direction: column;
+            justify-content: flex-end;
+            .messages {
+                padding: 20px;
+                height: auto;
                 display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                .avatar {
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    background-position: center;
-                    background-size: cover;
-                    background-repeat: no-repeat;
+                gap: 20px;
+                flex-direction: column;
+                overflow-y: scroll;
+                &::-webkit-scrollbar {
+                    display: none;
                 }
 
-                .text-message {
-                    margin-top: 10px;
-                    display: block;
-                    font-size: 14px;
-                    padding: 10px;
-                    max-width: 400px;
-                    overflow-wrap: break-word;
-                    background-color: rgb(33, 114, 68, 0.8);
-                    border-radius: 10px;
-                    border-top-left-radius: 0;
-                    color: #fff;
+                .message {
+                    display: flex;
+                    flex-wrap: wrap;
+                    height: auto;
+                    gap: 10px;
+                    .avatar {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        background-position: center;
+                        background-size: cover;
+                        background-repeat: no-repeat;
+                    }
+
+                    .text-message {
+                        margin-top: 10px;
+                        display: block;
+                        font-size: 14px;
+                        padding: 10px;
+                        max-width: 400px;
+                        overflow-wrap: break-word;
+                        background-color: rgb(33, 114, 68, 0.8);
+                        border-radius: 10px;
+                        border-top-left-radius: 0;
+                        color: #fff;
+                    }
+                    img {
+                        max-width: 400px;
+                        max-height: 500px;
+                    }
                 }
-                img {
-                    max-width: 400px;
-                    max-height: 500px;
-                }
-            }
-            .self {
-                align-self: flex-end;
-                .text-message {
-                    border-top-right-radius: 0;
-                    border-top-left-radius: 10px;
+                .self {
+                    align-self: flex-end;
+                    .text-message {
+                        border-top-right-radius: 0;
+                        border-top-left-radius: 10px;
+                    }
                 }
             }
         }
@@ -118,6 +124,7 @@
             justify-content: center;
             .input-wrapper {
                 display: flex;
+                position: relative;
                 align-items: center;
                 width: 88%;
                 background-color: #f1f1f1;
@@ -151,20 +158,25 @@
                     .icon {
                         width: 18px;
                         height: 18px;
-                        background-repeat: no-repeat;
-                        background-size: cover;
-                        background-position: center;
                         cursor: pointer;
                     }
-                    .micro {
-                        background-image: url("../../imgs/microphone.png");
-                    }
                     .image {
-                        background-image: url("../../imgs/image.png");
+                        display: flex;
+                        align-items: center;
+                        width: 20px;
+                        height: 20px;
                     }
-                    .send {
-                        background-image: url("../../imgs/send.png");
-                    }
+                }
+                .emoji {
+                    cursor: pointer;
+                    margin-left: 16px;
+                    width: 24px;
+                    height: 24px;
+                }
+                .emoji-picker {
+                    position: absolute;
+                    height: auto;
+                    bottom: calc(100% + 16px);
                 }
             }
         }

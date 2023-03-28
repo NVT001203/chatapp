@@ -77,10 +77,6 @@ facebookRouter.get("/callback", async (req, res) => {
                 .redirect(`${process.env.CLIENT_URL}/fetch_user`);
         }
     } catch (err) {
-        res.status(200).json({
-            code: 500,
-            status: "error",
-            message: err.message,
-        });
+        res.status(500).redirect(`${process.env.CLIENT_URL}/login`);
     }
 });

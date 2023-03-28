@@ -121,7 +121,7 @@ export const removeChat = async (db, { user_id, chat_id }) => {
 
 export const getUsers = async (db, { users_id }) => {
     const users = await db.query(`
-        select id, display_name, avatar_url from users where
+        select id user_id, display_name, avatar_url from users where
         id::text in (select unnest(array['${users_id.join(`', '`)}']));
     `);
     return users.rows;
@@ -129,7 +129,7 @@ export const getUsers = async (db, { users_id }) => {
 
 export const searchUsers = async (db, { display_name }) => {
     const friends = await db.query(`
-        select id, display_name, avatar_url from users 
+        select id user_id, display_name, avatar_url from users 
         where lower(display_name) like lower('%${display_name}%');
     `);
     return friends.rows;

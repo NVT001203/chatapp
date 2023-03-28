@@ -40,7 +40,7 @@ export const createGroupChat = async (db, { members }) => {
             values('{"${members.join(`", "`)}"}', '{"${
         members[0]
     }"}', true, current_timestamp)
-        returning id, members, last_message, is_group,
+        returning id, members, last_message, is_group, chat_avatar,
         background_image, name, updated_at;
     `);
     return new_group.rows[0];
@@ -81,10 +81,10 @@ export const removeMember = async (db, { chat_id, user_id }) => {
     return remove_members.rows[0];
 };
 
-export const addMessage = async (db, { chat_id, message, updated }) => {
+export const addLastMessage = async (db, { chat_id, message }) => {
     const add_message = await db.query(`
         update chats set
-        updated_at='${updated}',
+        updated_at=(select created_at from messages where id='${message}'),
         last_message='${message}'
         where id='${chat_id}' returning updated_at, last_message;
     `);
@@ -128,7 +128,7 @@ export const setChatAvatar = async (db, { chat_id, chat_avatar }) => {
 export const getChats = async (db, { user_id }) => {
     try {
         const chats = await db.query(`
-            select * from chats where id in (select unnest(chats) from users where id='${user_id}');
+            select * from chats where id in (select unnest(chats) from users where id='${user_id}') order by updated_at desc;
         `);
         return chats.rows;
     } catch (e) {

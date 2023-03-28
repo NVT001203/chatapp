@@ -133,10 +133,6 @@ authRouter.post("/register", async (req, res) => {
                     user_id: id,
                     token: refresh_token,
                 });
-                console.log({
-                    refresh_token,
-                    access_token,
-                });
                 res.cookie("token", `Bearer ${refresh_token}`, {
                     httpOnly: true,
                     secure: true,

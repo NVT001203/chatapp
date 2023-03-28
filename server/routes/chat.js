@@ -15,6 +15,7 @@ import {
     setGroupName,
 } from "../controllers/chat.js";
 import { addChat, removeChat } from "../controllers/user.js";
+import { getMessages } from "../controllers/message.js";
 
 export const chatRouter = Router();
 
@@ -26,21 +27,24 @@ chatRouter.post("/create_chat", async (req, res) => {
             users_id: [user_id, friend_id],
         });
 
-        if (chatExists.exists)
+        if (chatExists.exists) {
+            const messages = await getMessages(client, {
+                chat_id: chatExists.chat.id,
+            });
             res.status(200).json({
                 code: 200,
                 status: "success",
                 message: "Chat is exists",
-                elements: chatExists.chat,
+                elements: { chat: chatExists.chat, messages },
             });
-        else {
+        } else {
             const chat = await createChat(client, { user_id, friend_id });
             await addChat(client, { chat_id: chat.id, user_id });
             await addChat(client, { chat_id: chat.id, user_id: friend_id });
             res.status(200).json({
                 code: 200,
                 status: "success",
-                elements: chat,
+                elements: { chat },
             });
         }
     } catch (e) {

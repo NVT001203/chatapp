@@ -12,7 +12,9 @@ export const AuthContextProvider = ({ children }) => {
     const signOut = async () => {
         if (currentUser && currentUser?.user_id) {
             return publicInstance
-                .delete(`/user/${currentUser.user_id}/sign_out`)
+                .delete(`/user/${currentUser.user_id}/sign_out`, {
+                    withCredentials: true,
+                })
                 .then(({ data }) => {
                     if (data.status == "success") {
                         return true;

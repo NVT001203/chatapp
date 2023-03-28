@@ -1,167 +1,107 @@
-const users = {
-    1: {
-        avatar_url:
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYsVLOl5HgpFfJdWzkHWW4DB1oI_0ENsvq7oAk2auWNw&s",
-        display_name: "NVT",
-    },
-    12345: {
-        avatar_url:
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYsVLOl5HgpFfJdWzkHWW4DB1oI_0ENsvq7oAk2auWNw&s",
-        display_name: "Không phải NVT",
-    },
-};
+/* eslint-disable jsx-a11y/alt-text */
 
-const chat = {
-    chat_id: "1231",
-    name: "Design Team",
-    group: false,
-    members: ["1", "12345"],
-    admins: [],
-    background_image:
-        "https://images.pexels.com/photos/3680912/pexels-photo-3680912.jpeg?auto=compress&cs=tinysrgb&w=600",
-};
+import { useEffect, useRef } from "react";
+import ImageLoading from "../imgs/ImageLoading.gif";
 
-const current_user = {
-    user_id: "1",
-    avatar_url:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYsVLOl5HgpFfJdWzkHWW4DB1oI_0ENsvq7oAk2auWNw&s",
-};
-const messages = [
-    {
-        sender_id: "12345",
-        text: "This is message test! Last message",
-        file: null,
-        photo: null,
-    },
+function Messages({ data }) {
+    const { currentChat, currentUser, store } = data;
+    const ref = useRef();
+    useEffect(() => {
+        ref.current?.scrollIntoView({ behavior: "smooth" });
+    }, [store.messages[currentChat.id]]);
+    const sortMessages = (messages) => {
+        let objsort = {};
+        Object.entries(messages).forEach(([key, value]) => {
+            objsort[value.created_at] = key;
+        });
+        return Object.entries(objsort).sort();
+    };
 
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "1",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "1",
-        text: null,
-        file: null,
-        photo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYsVLOl5HgpFfJdWzkHWW4DB1oI_0ENsvq7oAk2auWNw&s",
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "1",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!;laskfl;'dkas;'lfkasl;'kdf';alskdf';laskfdl;'askf'l;askf';lska'fl;ks';fklas'fksl;",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "1",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-
-    {
-        sender_id: "12345",
-        text: "This is message test!",
-        file: null,
-        photo: null,
-    },
-];
-
-function Messages() {
     return (
         <div
-            className="messages"
             style={
-                chat.background_image && {
-                    backgroundImage: `url(${chat.background_image})`,
+                (currentChat.background_image && {
+                    backgroundImage: `url(${currentChat.background_image})`,
                     backgroundPosition: "center",
                     backgroundSize: "cover",
                     backgroundRepeat: "no-repeat",
-                }
+                }) || { backgroundColor: "rgba(255, 255, 255, 0.5)" }
             }
+            className="messages-wrapper"
         >
-            {messages.map((message, index) => {
-                return (
-                    <div
-                        key={index}
-                        className={`message ${
-                            message.sender_id == current_user.user_id && "self"
-                        }`}
-                    >
-                        {message.sender_id != current_user.user_id && (
-                            <div
-                                className="avatar"
-                                style={{
-                                    backgroundImage: `url(${
-                                        users[message.sender_id].avatar_url
-                                    })`,
-                                }}
-                            ></div>
-                        )}
-                        {message.text && (
-                            <span className="text-message">{message.text}</span>
-                        )}
-                        {message.file && (
-                            <div className="file-message">{message.text}</div>
-                        )}
-                        {message.photo && <img src={message.photo} />}
-                    </div>
-                );
-            })}
+            <div className="messages">
+                {store.messages[currentChat.id] &&
+                    currentChat.members.includes(currentUser.user_id) &&
+                    sortMessages(store.messages[currentChat.id]).map(
+                        ([created_at, key]) => {
+                            return (
+                                <div
+                                    key={key}
+                                    className={`message ${
+                                        store.messages[currentChat.id][key]
+                                            .sender == currentUser.user_id &&
+                                        "self"
+                                    }`}
+                                >
+                                    {store.messages[currentChat.id][key]
+                                        .sender != currentUser.user_id && (
+                                        <div
+                                            className="avatar"
+                                            style={{
+                                                backgroundImage: `url(${
+                                                    store.users[
+                                                        store.messages[
+                                                            currentChat.id
+                                                        ][key].sender
+                                                    ].avatar_url
+                                                })`,
+                                            }}
+                                        ></div>
+                                    )}
+                                    {store.messages[currentChat.id][key]
+                                        .text && (
+                                        <span
+                                            ref={ref}
+                                            className="text-message"
+                                        >
+                                            {
+                                                store.messages[currentChat.id][
+                                                    key
+                                                ].text
+                                            }
+                                        </span>
+                                    )}
+                                    {store.messages[currentChat.id][key]
+                                        .file_url && (
+                                        <div ref={ref} className="file-message">
+                                            {
+                                                store.messages[currentChat.id][
+                                                    key
+                                                ].file_url
+                                            }
+                                        </div>
+                                    )}
+                                    {store.messages[currentChat.id][key]
+                                        .photo_url && (
+                                        <img
+                                            ref={ref}
+                                            src={
+                                                store.messages[currentChat.id][
+                                                    key
+                                                ].photo_url
+                                            }
+                                        />
+                                    )}
+                                    {store.messages[currentChat.id][key]
+                                        .loading_photo && (
+                                        <img ref={ref} src={ImageLoading} />
+                                    )}
+                                </div>
+                            );
+                        }
+                    )}
+            </div>
         </div>
     );
 }
-
 export default Messages;

@@ -16,15 +16,17 @@ const chats = {
 
 const messages = {
     // chat_id: {
-    //     id: "",
-    //     chat_id: "",
-    //     sender: "",
-    //     text: "",
-    //     photo_url: "",
-    //     file_url: "",
-    //     recall: false,
-    //     background_image: null
-    //     created_at: "",
+    //     id: {
+    //         id: "",
+    //         chat_id: "",
+    //         sender: "",
+    //         text: "",
+    //         photo_url: "",
+    //         file_url: "",
+    //         recall: false,
+    //         background_image: null,
+    //         created_at: "",
+    //     },
     // },
 };
 
@@ -49,7 +51,14 @@ const reducer = (state, action) => {
                 chats: { ...state.chats },
                 messages: {
                     ...state.messages,
-                    [action.message.chat_id]: action.message,
+                    [action.message.chat_id]: state.messages[
+                        action.message.chat_id
+                    ]
+                        ? {
+                              ...state.messages[action.message.chat_id],
+                              [action.message.id]: action.message,
+                          }
+                        : { [action.message.id]: action.message },
                 },
                 users: { ...state.users },
             };
@@ -85,11 +94,42 @@ const reducer = (state, action) => {
             };
         }
         case "ADD_MESSAGES": {
+            let messages = state.messages;
+            for (const message of action.messages) {
+                messages = {
+                    ...messages,
+                    [message.chat_id]: messages[message.chat_id]
+                        ? {
+                              ...messages[message.chat_id],
+                              [message.id]: message,
+                          }
+                        : { [message.id]: message },
+                };
+            }
+
             return {
                 users: { ...state.users },
                 chats: { ...state.chats },
-                messages: { ...state.messages, ...action.messages },
+                messages,
             };
+        }
+        case "ADD_MESSAGE_DONE": {
+            delete state.messages[action.message.chat_id][action.id];
+            return {
+                chats: { ...state.chats },
+                messages: {
+                    ...state.messages,
+                    [action.message.chat_id]: {
+                        ...state.messages[action.message.chat_id],
+                        [action.message.id]: action.message,
+                    },
+                },
+                users: { ...state.users },
+            };
+        }
+        case "REMOVE_MESSAGE_FAILURE": {
+            delete state.messages[action.message.chat_id][action.id];
+            return state;
         }
         default:
             return state;
@@ -100,11 +140,9 @@ export const StoreContext = createContext();
 
 export const StoreContextProvider = ({ children }) => {
     const [store, dispatch] = useReducer(reducer, initialStore);
-
     // useEffect(() => {
     //     console.log(store);
     // }, [store]);
-
     return (
         <StoreContext.Provider value={{ store, dispatch }}>
             {children}

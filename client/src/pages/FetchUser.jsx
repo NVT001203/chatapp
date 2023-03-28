@@ -4,11 +4,13 @@ import { ToastContainer, toast } from "react-toastify";
 import Loading from "../imgs/Loading.gif";
 import "./styles/loading.scss";
 import { AuthContext } from "../contexts/authContext";
+import { StoreContext } from "../contexts/StoreContext";
 
 function FetchUser() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const { getUser, setCurrentUser } = useContext(AuthContext);
+    const { getUser } = useContext(AuthContext);
+    const { dispatch } = useContext(StoreContext);
     let mounted = true;
 
     useEffect(() => {
@@ -16,6 +18,10 @@ function FetchUser() {
             mounted = false;
             await getUser()
                 .then((user) => {
+                    dispatch({
+                        type: "ADD_USERS",
+                        users: { [user.user_id]: user },
+                    });
                     setLoading(false);
                     navigate("/messenger");
                 })

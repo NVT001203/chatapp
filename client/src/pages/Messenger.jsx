@@ -41,13 +41,9 @@ function Messenger() {
                         for (const chat of chats) {
                             chatsObj[chat.id] = chat;
                         }
-                        const messagesObj = {};
-                        for (const message of messages) {
-                            messagesObj[message.chat_id] = message;
-                        }
                         const usersObj = {};
                         for (const user of users) {
-                            usersObj[user.id] = user;
+                            usersObj[user.user_id] = user;
                         }
                         dispatch({
                             type: "ADD_CHATS",
@@ -55,7 +51,7 @@ function Messenger() {
                         });
                         dispatch({
                             type: "ADD_MESSAGES",
-                            messages: messagesObj,
+                            messages: messages,
                         });
                         dispatch({
                             type: "ADD_USERS",
@@ -79,13 +75,9 @@ function Messenger() {
                                 for (const chat of chats) {
                                     chatsObj[chat.id] = chat;
                                 }
-                                const messagesObj = {};
-                                for (const message of messages) {
-                                    messagesObj[message.chat_id] = message;
-                                }
                                 const usersObj = {};
                                 for (const user of users) {
-                                    usersObj[user.id] = user;
+                                    usersObj[user.user_id] = user;
                                 }
                                 dispatch({
                                     type: "ADD_CHATS",
@@ -93,7 +85,7 @@ function Messenger() {
                                 });
                                 dispatch({
                                     type: "ADD_MESSAGES",
-                                    messages: messagesObj,
+                                    messages: messages,
                                 });
                                 dispatch({
                                     type: "ADD_USERS",
