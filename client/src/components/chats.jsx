@@ -18,6 +18,12 @@ function Chats({ toast }) {
         return Object.entries(objsort).sort();
     };
     const handleGetMessages = async (chat) => {
+        if (
+            store.messages[chat.id] &&
+            Object.keys(store.messages[chat.id]).length > 1
+        ) {
+            return setCurrentChat(chat);
+        }
         try {
             setCurrentChat(chat);
             const { data } = await publicInstance.get(
@@ -85,33 +91,43 @@ function Chats({ toast }) {
                                 `0${updated_at.getMinutes()}`
                             }`;
                         let last_message = null;
-                        if (
-                            data.last_message != null ||
-                            store.messages[data.id]
-                        ) {
+                        if (data.last_message != null) {
                             if (
-                                store.messages[data.id][data.last_message].text
+                                store.messages[data.id][data.last_message]?.text
                             ) {
                                 last_message = `${
                                     store.users[
                                         store.messages[data.id][
                                             data.last_message
                                         ].sender
-                                    ].display_name
+                                    ].display_name == currentUser.display_name
+                                        ? "You"
+                                        : store.users[
+                                              store.messages[data.id][
+                                                  data.last_message
+                                              ].sender
+                                          ].display_name
                                 }: ${
                                     store.messages[data.id][data.last_message]
                                         .text
                                 }`;
                             } else if (
-                                store.messages[data.id][data.last_message].photo
+                                store.messages[data.id][data.last_message]
+                                    ?.photo_url
                             ) {
                                 last_message = `${
                                     store.users[
                                         store.messages[data.id][
                                             data.last_message
                                         ].sender
-                                    ].display_name
-                                } just sent a picture!`;
+                                    ].display_name == currentUser.display_name
+                                        ? "You"
+                                        : store.users[
+                                              store.messages[data.id][
+                                                  data.last_message
+                                              ].sender
+                                          ].display_name
+                                } sent a picture!`;
                             } else {
                                 last_message = `${
                                     store.users[

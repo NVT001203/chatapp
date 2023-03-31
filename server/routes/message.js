@@ -4,6 +4,7 @@ import { handleError } from "../helpers/handleError.js";
 import {
     createMessage,
     getMessages,
+    getPhotos,
     recallMessge,
 } from "../controllers/message.js";
 import { addLastMessage } from "../controllers/chat.js";
@@ -24,8 +25,8 @@ messageRouter.post("/:chat_id/add_message", async (req, res) => {
         });
         const add_room = await addLastMessage(client, {
             chat_id,
-            message: message.id,
-            updated: message.created_at,
+            message: message.message.id,
+            updated: message.message.created_at,
         });
         res.status(200).json({
             code: 200,
@@ -33,7 +34,6 @@ messageRouter.post("/:chat_id/add_message", async (req, res) => {
             elements: message,
         });
     } catch (e) {
-        console.log(e);
         return handleError(e, res);
     }
 });
@@ -62,6 +62,20 @@ messageRouter.get("/:chat_id/get_messages", async (req, res) => {
             code: 200,
             status: "success",
             elements: messages,
+        });
+    } catch (e) {
+        return handleError(e, res);
+    }
+});
+
+messageRouter.get("/:chat_id/get_photos", async (req, res) => {
+    try {
+        const chat_id = req.params.chat_id;
+        const photos = await getPhotos(client, { chat_id });
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: photos,
         });
     } catch (e) {
         return handleError(e, res);

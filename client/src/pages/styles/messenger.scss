@@ -1,3 +1,4 @@
+@import "https://unpkg.com/open-props/easings.min.css";
 .messenger-container {
     width: 90vw;
     height: 90vh;
@@ -37,9 +38,6 @@
         }
         .friends {
             background-image: url("../../imgs/friends.png");
-        }
-        .notification {
-            background-image: url("../../imgs/notification.png");
         }
         .setting {
             background-image: url("../../imgs/setting.png");

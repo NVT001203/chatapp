@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 
 function Navbar({ data }) {
-    const { currentChat, currentUser, store } = data;
+    const { currentChat, currentUser, store, setHidden } = data;
     const [avatar, setAvatar] = useState(currentChat.chat_avatar);
     const [name, setName] = useState(currentChat.chat_avatar);
     useEffect(() => {
@@ -19,6 +19,16 @@ function Navbar({ data }) {
                     ? store.users[currentChat.members[0]].display_name
                     : store.users[currentChat.members[1]].display_name
             );
+        } else {
+            setAvatar(
+                "https://cdn3.vectorstock.com/i/1000x1000/24/27/people-group-avatar-character-vector-12392427.jpg"
+            );
+            setName(
+                currentChat.name ||
+                    `${currentChat.members.map(
+                        (id) => store.users[id].display_name
+                    )}`
+            );
         }
     }, [
         currentChat,
@@ -30,17 +40,22 @@ function Navbar({ data }) {
     ]);
     return (
         <div className="navbar">
-            <div
-                className="chat-avatar"
-                style={{ backgroundImage: `url(${avatar})` }}
-            ></div>
-            <div className="navbar-content">
-                <span>{name}</span>
+            <div className="wrapper">
+                <div
+                    className="chat-avatar"
+                    style={{ backgroundImage: `url(${avatar})` }}
+                ></div>
+                <div className="navbar-content">
+                    <span>{name}</span>
+                </div>
             </div>
             <div className="more-wrapper">
                 <div className="icon video"></div>
                 <div className="icon phone"></div>
-                <div className="icon more"></div>
+                <div
+                    className="icon more"
+                    onClick={() => setHidden((pre) => !pre)}
+                ></div>
             </div>
         </div>
     );

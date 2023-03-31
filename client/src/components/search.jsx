@@ -228,10 +228,7 @@ function Search({ toast }) {
                 }}
             />
             {searched && (
-                <div
-                    className={(!addUser && "friends") || "friends add-user"}
-                    onBlur={() => setSearched(false)}
-                >
+                <div className={(!addUser && "friends") || "friends add-user"}>
                     <span
                         className="x-symbol"
                         onClick={() => {

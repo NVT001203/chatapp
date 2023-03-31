@@ -2,8 +2,6 @@
     height: 100%;
     flex-grow: 1;
     background-image: linear-gradient(to bottom, #ffafbd, #ffc3a0);
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
     div {
         height: 100%;
         .navbar {
@@ -11,6 +9,13 @@
             height: auto;
             padding: 30px 20px 16px;
             align-items: center;
+            justify-content: space-between;
+            .wrapper {
+                display: flex;
+                width: 100%;
+                gap: 16px;
+                align-items: center;
+            }
             .chat-avatar {
                 width: 52px;
                 height: 52px;
@@ -20,13 +25,14 @@
                 border-radius: 50%;
             }
             .navbar-content {
-                flex-grow: 1;
+                width: calc(100% - 52px - 16px);
                 span {
                     font-size: 22px;
                     font-weight: 600;
-                    padding: 0 16px;
-                    display: inline-block;
-                    width: auto;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 1;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
                 }
             }
 
@@ -102,8 +108,8 @@
                         color: #fff;
                     }
                     img {
-                        max-width: 400px;
-                        max-height: 500px;
+                        max-width: 340px;
+                        max-height: 340px;
                     }
                 }
                 .self {
@@ -209,4 +215,9 @@
             }
         }
     }
+}
+
+#hidden {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
 }

@@ -10,7 +10,7 @@ export const AuthContext = createContext();
 export const AuthContextProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState({});
     const signOut = async () => {
-        if (currentUser && currentUser?.user_id) {
+        if (currentUser && currentUser.user_id) {
             return publicInstance
                 .delete(`/user/${currentUser.user_id}/sign_out`, {
                     withCredentials: true,

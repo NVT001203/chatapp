@@ -51,7 +51,7 @@ export const addMembers = async (db, { chat_id, members }) => {
         update chats set members=array_cat(members, '{"${members.join(
             `", "`
         )}"}'), updated_at=current_timestamp
-        where id='${chat_id}' returning members, updated_at;
+        where id='${chat_id}' returning *;
     `);
     return add_members.rows[0];
 };
@@ -95,17 +95,20 @@ export const setGroupName = async (db, { chat_id, name }) => {
     const set_group_name = await db.query(`
         update chats set name='${name}',
         updated_at=current_timestamp
-        where id='${chat_id}' returning name, updated_at;
+        where id='${chat_id}' returning *;
     `);
     return set_group_name.rows[0];
 };
 
 export const setBackground = async (db, { chat_id, background_image }) => {
-    const set_background = await db.query(`
-        update chats set background_image='${background_image}',
+    const set_background = await db.query(
+        `
+        update chats set background_image=$1,
         updated_at=current_timestamp
-        where id='${chat_id}' returning background_image, updated_at;
-    `);
+        where id=$2 returning *;
+    `,
+        [background_image, chat_id]
+    );
     return set_background.rows[0];
 };
 
@@ -118,11 +121,11 @@ export const getAllMembers = async (db, { chat_id }) => {
 };
 
 export const setChatAvatar = async (db, { chat_id, chat_avatar }) => {
-    const changed = db.query(`
+    const chat = await db.query(`
         update chats set chat_avatar='${chat_avatar}'
-        where id='${chat_id}';
+        where id='${chat_id}' returning *;
     `);
-    return changed.rowCount == 1 ? true : false;
+    return chat.rows[0];
 };
 
 export const getChats = async (db, { user_id }) => {

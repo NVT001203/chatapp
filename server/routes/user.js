@@ -18,7 +18,7 @@ import {
     updatePassword,
     updateRefreshToken,
 } from "../controllers/auth.js";
-import { getChats, removeMember } from "../controllers/chat.js";
+import { getAllMembers, getChats, removeMember } from "../controllers/chat.js";
 import { getLastMessages } from "../controllers/message.js";
 
 export const userRouter = Router();
@@ -227,6 +227,11 @@ userRouter.get("/search_users/:display_name", async (req, res) => {
         const { user_id } = req.user;
         let friends = await searchUsers(client, { display_name });
         friends = friends.filter((e) => e.user_id != user_id);
+        const chat_id = req.query.chat_id;
+        if (chat_id) {
+            const { members } = await getAllMembers(client, { chat_id });
+            friends = friends.filter((e) => !members.includes(e.user_id));
+        }
         res.status(200).json({
             code: 200,
             status: "success",

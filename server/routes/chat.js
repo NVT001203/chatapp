@@ -74,8 +74,17 @@ chatRouter.post("/create_group", async (req, res) => {
 
 chatRouter.put("/add_members/:chat_id", async (req, res) => {
     try {
-        const chat_id = req.params.id;
-        const { members } = req.body;
+        const chat_id = req.params.chat_id;
+        let { members } = req.body;
+        const chat_members = (await getAllMembers(client, { chat_id })).members;
+        members = members.filter((e) => !chat_members.includes(e));
+        if (members.length == 0) {
+            return res.status(200).json({
+                code: 200,
+                status: "error",
+                message: "members already exists",
+            });
+        }
         let n = members.length;
         while (n-- > 0) {
             await addChat(client, { chat_id, user_id: members[n] });
@@ -87,6 +96,7 @@ chatRouter.put("/add_members/:chat_id", async (req, res) => {
             elements: members_updated,
         });
     } catch (e) {
+        console.log(e);
         return handleError(e, res);
     }
 });
@@ -156,7 +166,7 @@ chatRouter.put("/set_groupName/:chat_id", async (req, res) => {
         const chat_id = req.params.chat_id;
         const { user_id } = req.user;
         const { members } = await getAllMembers(client, { chat_id });
-        if (!members.includes(chat_id))
+        if (!members.includes(user_id))
             throw new Error("User can only set name your group");
         const { name } = req.body;
         const group = await setGroupName(client, {
@@ -178,7 +188,7 @@ chatRouter.put("/set_groupBackground/:chat_id", async (req, res) => {
         const chat_id = req.params.chat_id;
         const { user_id } = req.user;
         const { members } = await getAllMembers(client, { chat_id });
-        if (!members.includes)
+        if (!members.includes(user_id))
             throw new Error("User can only set background your group");
         const { background_image } = req.body;
         const group = await setBackground(client, {
@@ -220,10 +230,11 @@ chatRouter.put("/set_chatAvatar/:chat_id", async (req, res) => {
         const { members } = await getAllMembers(client, { chat_id });
         if (!members.includes)
             throw new Error("User can only get members your group");
-        const changed = await setChatAvatar(client, { chat_id, chat_avatar });
+        const chat = await setChatAvatar(client, { chat_id, chat_avatar });
         res.status(200).json({
             code: 200,
-            status: (changed && "success") || "error",
+            status: "success",
+            elements: chat,
         });
     } catch (e) {
         return handleError(e, res);

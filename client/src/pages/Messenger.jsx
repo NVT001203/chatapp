@@ -15,6 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 function Messenger() {
     const { currentUser, refreshToken, getUser, setCurrentUser } =
         useContext(AuthContext);
+    const [hidden, setHidden] = useState(true);
     const { dispatch } = useContext(StoreContext);
     const [loading, setLoading] = useState(true);
 
@@ -106,11 +107,22 @@ function Messenger() {
     return (
         <div>
             {(!loading && (
-                <div className="messenger-container">
+                <div
+                    className="messenger-container"
+                    style={{ position: "relative" }}
+                >
                     <Navigate toast={toast} />
                     <Sidebar toast={toast} />
-                    <Chat toast={toast} />
-                    <ChatInfo toast={toast} />
+                    <Chat data={{ toast, hidden, setHidden }} />
+                    <ChatInfo
+                        data={{
+                            toast,
+                            hidden,
+                            setHidden,
+                            currentUser,
+                            refreshToken,
+                        }}
+                    />
                 </div>
             )) || <LoadingResource />}
             <ToastContainer />

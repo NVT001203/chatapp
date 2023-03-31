@@ -8,16 +8,24 @@ import { ChatContext } from "../contexts/chatContext";
 import MessengerWelcome from "./messengerWelcome";
 import { AuthContext } from "../contexts/authContext";
 
-function Chat({ toast }) {
+function Chat({ data }) {
+    const { toast } = data;
     const { store, dispatch } = useContext(StoreContext);
     const { currentChat, setCurrentChat } = useContext(ChatContext);
     const { currentUser } = useContext(AuthContext);
     return (
-        <div className="chat-container">
+        <div className="chat-container" id={data.hidden && "hidden"}>
             {(currentChat &&
                 currentChat.members.includes(currentUser.user_id) && (
                     <div>
-                        <Navbar data={{ currentChat, store, currentUser }} />
+                        <Navbar
+                            data={{
+                                currentChat,
+                                store,
+                                currentUser,
+                                setHidden: data.setHidden,
+                            }}
+                        />
                         <Messages data={{ currentChat, store, currentUser }} />
                         <Input
                             data={{

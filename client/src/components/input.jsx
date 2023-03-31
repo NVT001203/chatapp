@@ -29,23 +29,23 @@ function Input({ data }) {
                 if (data.status == "success") {
                     dispatch({
                         type: "ADD_MESSAGE",
-                        message: data.elements,
+                        message: data.elements.message,
                     });
                     dispatch({
                         type: "ADD_CHATS",
                         chats: {
-                            [data.elements.chat_id]: {
-                                ...store.chats[data.elements.chat_id],
-                                updated_at: data.elements.created_at,
-                                last_message: data.elements.id,
+                            [data.elements.message.chat_id]: {
+                                ...store.chats[data.elements.message.chat_id],
+                                updated_at: data.elements.message.created_at,
+                                last_message: data.elements.message.id,
                             },
                         },
                     });
                     setCurrentChat((pre) => {
                         return {
                             ...pre,
-                            updated_at: data.elements.created_at,
-                            last_message: data.elements.id,
+                            updated_at: data.elements.message.created_at,
+                            last_message: data.elements.message.id,
                         };
                     });
                 } else {
@@ -64,26 +64,29 @@ function Input({ data }) {
                             if (data.status == "success") {
                                 dispatch({
                                     type: "ADD_MESSAGE",
-                                    message: data.elements,
+                                    message: data.elements.message,
                                 });
                                 dispatch({
                                     type: "ADD_CHATS",
                                     chats: {
-                                        [data.elements.chat_id]: {
+                                        [data.elements.message.chat_id]: {
                                             ...store.chats[
-                                                data.elements.chat_id
+                                                data.elements.message.chat_id
                                             ],
                                             updated_at:
-                                                data.elements.created_at,
-                                            last_message: data.elements.id,
+                                                data.elements.message
+                                                    .created_at,
+                                            last_message:
+                                                data.elements.message.id,
                                         },
                                     },
                                 });
                                 setCurrentChat((pre) => {
                                     return {
                                         ...pre,
-                                        updated_at: data.elements.created_at,
-                                        last_message: data.elements.id,
+                                        updated_at:
+                                            data.elements.message.created_at,
+                                        last_message: data.elements.message.id,
                                     };
                                 });
                             } else {
@@ -132,24 +135,27 @@ function Input({ data }) {
                     dispatch({
                         type: "ADD_MESSAGE_DONE",
                         id,
-                        message: data.elements,
+                        message: data.elements.message,
                     });
                     dispatch({
                         type: "ADD_CHATS",
                         chats: {
-                            [data.elements.chat_id]: {
-                                ...store.chats[data.elements.chat_id],
-                                updated_at: data.elements.created_at,
-                                last_message: data.elements.id,
+                            [currentChat.id]: {
+                                ...currentChat,
+                                updated_at: data.elements.message.created_at,
+                                last_message: data.elements.message.id,
                             },
                         },
                     });
-
+                    dispatch({
+                        type: "ADD_PHOTO",
+                        photo: data.elements.photo,
+                    });
                     setCurrentChat((pre) => {
                         return {
                             ...pre,
-                            updated_at: data.elements.created_at,
-                            last_message: data.elements.id,
+                            updated_at: data.elements.message.created_at,
+                            last_message: data.elements.message.id,
                         };
                     });
                 } else {
@@ -177,26 +183,31 @@ function Input({ data }) {
                                 dispatch({
                                     type: "ADD_MESSAGE_DONE",
                                     id,
-                                    message: data.elements,
+                                    message: data.elements.message,
+                                });
+                                dispatch({
+                                    type: "ADD_PHOTO",
+                                    photo: data.elements.photo,
                                 });
                                 dispatch({
                                     type: "ADD_CHATS",
                                     chats: {
-                                        [data.elements.chat_id]: {
-                                            ...store.chats[
-                                                data.elements.chat_id
-                                            ],
+                                        [currentChat.id]: {
+                                            ...currentChat,
                                             updated_at:
-                                                data.elements.created_at,
-                                            last_message: data.elements.id,
+                                                data.elements.message
+                                                    .created_at,
+                                            last_message:
+                                                data.elements.message.id,
                                         },
                                     },
                                 });
                                 setCurrentChat((pre) => {
                                     return {
                                         ...pre,
-                                        updated_at: data.elements.created_at,
-                                        last_message: data.elements.id,
+                                        updated_at:
+                                            data.elements.message.created_at,
+                                        last_message: data.elements.message.id,
                                     };
                                 });
                             } else {
