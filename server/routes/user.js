@@ -19,7 +19,7 @@ import {
     updateRefreshToken,
 } from "../controllers/auth.js";
 import { getAllMembers, getChats, removeMember } from "../controllers/chat.js";
-import { getLastMessages } from "../controllers/message.js";
+import { getLastMessages, getLastNotices } from "../controllers/message.js";
 
 export const userRouter = Router();
 
@@ -198,9 +198,11 @@ userRouter.get("/:id/get_resource", async (req, res) => {
         const chats = await getChats(client, { user_id });
         let messages_id = [];
         let members = [];
+        let last_notices = [];
         for (const chat of chats) {
+            if (!chat.last_message) last_notices.push(chat.id);
             messages_id.push(chat.last_message);
-            members = [...members, ...chat.members];
+            members = [...members, ...chat.members, ...chat.members_leaved];
         }
         const membersSet = new Set(members);
         members = Array.from(membersSet);
@@ -211,12 +213,19 @@ userRouter.get("/:id/get_resource", async (req, res) => {
             messages = await getLastMessages(client, { messages_id });
         if (members.length > 0)
             users = await getUsers(client, { users_id: members });
+        if (last_notices.length > 0) {
+            const notices = await getLastNotices(client, {
+                chats_id: last_notices,
+            });
+            messages = [...messages, ...notices];
+        }
         res.status(200).json({
             code: 200,
             status: "success",
             elements: { chats, messages, users },
         });
     } catch (e) {
+        console.log(e);
         handleError(e, res);
     }
 });

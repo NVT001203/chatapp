@@ -9,6 +9,7 @@ import Group from "../imgs/group.png";
 import AddUser from "../imgs/user.png";
 import RemoveUser from "../imgs/removeUser.png";
 import SearchUser from "../imgs/searchUser.png";
+import { socket } from "../socket/socket";
 
 function Search({ toast }) {
     const [searched, setSearched] = useState(false);
@@ -17,8 +18,8 @@ function Search({ toast }) {
     const [groupMembers, setGroupMembers] = useState([]);
     const [addUser, setAddUser] = useState(false);
     const searchRef = useRef();
-    const { dispatch } = useContext(StoreContext);
-    const { refreshToken } = useContext(AuthContext);
+    const { dispatch, store } = useContext(StoreContext);
+    const { refreshToken, currentUser } = useContext(AuthContext);
     const { setCurrentChat } = useContext(ChatContext);
     const navigate = useNavigate();
 
@@ -107,7 +108,16 @@ function Search({ toast }) {
                     type: "ADD_CHATS",
                     chats: chatObj,
                 });
+                dispatch({
+                    type: "ADD_MESSAGE",
+                    message: data.elements.notice,
+                });
                 setCurrentChat(data.elements.chat);
+                socket.emit("add-chat", {
+                    chat: data.elements.chat,
+                    notices: [data.elements.notice],
+                    members: { [currentUser.user_id]: currentUser },
+                });
             })
             .catch((error) => {
                 const data = error.response.data;
@@ -123,7 +133,7 @@ function Search({ toast }) {
                                     type: "ADD_MESSAGES",
                                     messages: messages,
                                 });
-                                return setCurrentChat(data.elements);
+                                return setCurrentChat(data.elements.chat);
                             }
                             const chatObj = {
                                 [res.data.elements.chat.id]:
@@ -133,7 +143,16 @@ function Search({ toast }) {
                                 type: "ADD_CHATS",
                                 chats: chatObj,
                             });
+                            dispatch({
+                                type: "ADD_MESSAGE",
+                                message: data.elements.notice.notice,
+                            });
                             setCurrentChat(data.elements.chat);
+                            socket.emit("add-chat", {
+                                chat: data.elements.chat,
+                                notices: [data.elements.notice],
+                                members: { [currentUser.user_id]: currentUser },
+                            });
                         })
                         .catch((e) => {
                             if (e == "Server error") {
@@ -165,12 +184,26 @@ function Search({ toast }) {
                         members: groupMembers,
                     }
                 );
-                setCurrentChat(data.chat);
-                const chatObj = { [data.elements.id]: data.elements };
+                setCurrentChat(data.elements.chat);
+                const chatObj = { [data.elements.chat.id]: data.elements.chat };
+                let members = {};
+                data.elements.chat.members.forEach((member) => {
+                    members = { ...members, [member]: store.users[member] };
+                });
                 dispatch({
                     type: "ADD_CHATS",
                     chats: chatObj,
                 });
+                dispatch({
+                    type: "ADD_MESSAGE",
+                    message: data.elements.notice,
+                });
+                socket.emit("add-chat", {
+                    chat: data.elements.chat,
+                    notices: [data.elements.notice],
+                    members: members,
+                });
+                setGroupMembers([]);
             } catch (e) {
                 if (e.response.data.message == "jwt expired") {
                     refreshToken()
@@ -181,17 +214,35 @@ function Search({ toast }) {
                                     members: groupMembers,
                                 }
                             );
-                            setCurrentChat(data.chat);
+                            setCurrentChat(data.elements.chat);
                             const chatObj = {
-                                [data.elements.id]: data.elements,
+                                [data.elements.chat.id]: data.elements.chat,
                             };
+                            let members = {};
+                            data.elements.chat.members.forEach((member) => {
+                                members = {
+                                    ...members,
+                                    [member]: store.users[member],
+                                };
+                            });
                             dispatch({
                                 type: "ADD_CHATS",
                                 chats: chatObj,
                             });
+                            dispatch({
+                                type: "ADD_MESSAGE",
+                                message: data.elements.notice,
+                            });
+                            socket.emit("add-chat", {
+                                chat: data.elements.chat,
+                                notices: [data.elements.notice],
+                                members: members,
+                            });
+                            setGroupMembers([]);
                         })
                         .catch((e) => {
                             console.log(e);
+                            setGroupMembers([]);
                             toast(
                                 "The login session has expired! Please login again."
                             );
@@ -200,10 +251,12 @@ function Search({ toast }) {
                             }, 6000);
                         });
                 } else {
+                    setGroupMembers([]);
                     toast("Somthing went wrong! Please try again.");
                 }
             }
         } else {
+            setGroupMembers([]);
             toast("Group must be equal or greater than 3 members!");
         }
     };

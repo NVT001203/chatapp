@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import { router } from "./routes/index.js";
-import { websocketConnect } from "./websocket/socket.js";
+import { socketConnect } from "./socket/socket.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { client } from "./db/db.config.js";
@@ -41,4 +41,4 @@ const server = app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
 
-websocketConnect(server);
+socketConnect(server);

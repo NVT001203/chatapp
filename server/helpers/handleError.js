@@ -30,6 +30,19 @@ export const handleError = (err, res) => {
                 status: "error",
                 message: "jwt expired",
             });
+        case "Only admins have this permission":
+            return res.status(403).json({
+                code: 403,
+                status: "error",
+                message: "Only admins have this permission",
+            });
+        case "Only members have this permission":
+            return res.status(403).json({
+                code: 403,
+                status: "error",
+                message: "Only members have this permissionn",
+            });
+
         // case ... other
         default:
             return res.status(500).json({

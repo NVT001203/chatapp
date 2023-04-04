@@ -1,7 +1,6 @@
 import env from "./env.js";
 
-const host = env.SERVER_HOST;
-const authHost = env.SERVER_AUTH_HOST;
+const authHost = env.SERVER_AUTH_URL;
 export const loginRoute = `${authHost}/auth/login`;
 export const loginGoogle = `${authHost}/auth/google`;
 export const loginFacebook = `${authHost}/auth/facebook`;

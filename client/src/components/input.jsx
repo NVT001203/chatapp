@@ -9,6 +9,7 @@ import Image from "../imgs/image.png";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebase/firebase";
 import { v4 as uuidv4 } from "uuid";
+import { socket } from "../socket/socket";
 
 function Input({ data }) {
     const [text, setText] = useState("");
@@ -48,11 +49,14 @@ function Input({ data }) {
                             last_message: data.elements.message.id,
                         };
                     });
+                    socket.emit("message", {
+                        message: data.elements.message,
+                    });
                 } else {
                     return toast("Something went wrong! Please try again.");
                 }
             } catch (e) {
-                if (e.response.data.message == "jwt expired") {
+                if (e.response?.data?.message == "jwt expired") {
                     await refreshToken()
                         .then(async (d) => {
                             const { data } = await publicInstance.post(
@@ -89,6 +93,9 @@ function Input({ data }) {
                                         last_message: data.elements.message.id,
                                     };
                                 });
+                                socket.emit("message", {
+                                    message: data.elements.message,
+                                });
                             } else {
                                 return toast(
                                     "Something went wrong! Please try again."
@@ -116,7 +123,7 @@ function Input({ data }) {
                     id,
                     loading_photo: true,
                     chat_id: currentChat.id,
-                    updated_at: IsoFormat,
+                    created_at: IsoFormat,
                     sender: currentUser.user_id,
                 },
             });
@@ -149,6 +156,10 @@ function Input({ data }) {
                     });
                     dispatch({
                         type: "ADD_PHOTO",
+                        photo: data.elements.photo,
+                    });
+                    socket.emit("message", {
+                        message: data.elements.message,
                         photo: data.elements.photo,
                     });
                     setCurrentChat((pre) => {
@@ -201,6 +212,10 @@ function Input({ data }) {
                                                 data.elements.message.id,
                                         },
                                     },
+                                });
+                                socket.emit("message", {
+                                    message: data.elements.message,
+                                    photo: data.elements.photo,
                                 });
                                 setCurrentChat((pre) => {
                                     return {

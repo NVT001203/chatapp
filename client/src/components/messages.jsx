@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import ImageLoading from "../imgs/ImageLoading.gif";
+import More from "../imgs/verticalThreeDot.png";
+import Emoji from "../imgs/emoji.png";
 
 function Messages({ data }) {
     const { currentChat, currentUser, store } = data;
@@ -10,11 +12,11 @@ function Messages({ data }) {
         ref.current?.scrollIntoView({ behavior: "smooth" });
     }, [store.messages[currentChat.id]]);
     const sortMessages = (messages) => {
-        let objsort = {};
+        let objarr = [];
         Object.entries(messages).forEach(([key, value]) => {
-            objsort[value.created_at] = key;
+            objarr.push([value.created_at, key]);
         });
-        return Object.entries(objsort).sort();
+        return objarr.sort();
     };
 
     return (
@@ -34,6 +36,69 @@ function Messages({ data }) {
                     currentChat.members.includes(currentUser.user_id) &&
                     sortMessages(store.messages[currentChat.id]).map(
                         ([created_at, key]) => {
+                            if (store.messages[currentChat.id][key].notice) {
+                                let updated_at = new Date(
+                                    store.messages[currentChat.id][
+                                        key
+                                    ].created_at.split(".")[0]
+                                );
+                                const hour = (updated_at.getHours() + 7) % 24;
+                                created_at =
+                                    `${
+                                        (`${hour}`.length == 2 && hour) ||
+                                        `0${hour}`
+                                    }` +
+                                    ":" +
+                                    `${
+                                        (`${updated_at.getMinutes()}`.length ==
+                                            2 &&
+                                            updated_at.getMinutes()) ||
+                                        `0${updated_at.getMinutes()}`
+                                    } ${updated_at.getDay()}-${updated_at.getMonth()}-${updated_at.getFullYear()}`;
+                                const text_arr =
+                                    store.messages[currentChat.id][
+                                        key
+                                    ].text.split("/u");
+                                if (
+                                    store.messages[currentChat.id][key]
+                                        .chat_created
+                                ) {
+                                    return (
+                                        <div
+                                            key={key}
+                                            className="notice-wrapper"
+                                        >
+                                            <span className="notice">
+                                                {store.users[
+                                                    store.messages[
+                                                        currentChat.id
+                                                    ][key].sender
+                                                ].display_name +
+                                                    " created a chat"}{" "}
+                                                {created_at}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div key={key} className="notice-wrapper">
+                                        <span className="notice">
+                                            {store.users[
+                                                store.messages[currentChat.id][
+                                                    key
+                                                ].sender
+                                            ].display_name +
+                                                ` ${
+                                                    text_arr[0] +
+                                                    store.users[text_arr[1]]
+                                                        .display_name +
+                                                    text_arr[2]
+                                                }`}{" "}
+                                            {created_at}
+                                        </span>
+                                    </div>
+                                );
+                            }
                             return (
                                 <div
                                     key={key}
@@ -62,7 +127,7 @@ function Messages({ data }) {
                                         .text && (
                                         <span
                                             ref={ref}
-                                            className="text-message"
+                                            className="message-text"
                                         >
                                             {
                                                 store.messages[currentChat.id][
@@ -72,19 +137,9 @@ function Messages({ data }) {
                                         </span>
                                     )}
                                     {store.messages[currentChat.id][key]
-                                        .file_url && (
-                                        <div ref={ref} className="file-message">
-                                            {
-                                                store.messages[currentChat.id][
-                                                    key
-                                                ].file_url
-                                            }
-                                        </div>
-                                    )}
-                                    {store.messages[currentChat.id][key]
                                         .photo_url && (
                                         <img
-                                            ref={ref}
+                                            className="message-image"
                                             src={
                                                 store.messages[currentChat.id][
                                                     key
@@ -94,8 +149,22 @@ function Messages({ data }) {
                                     )}
                                     {store.messages[currentChat.id][key]
                                         .loading_photo && (
-                                        <img ref={ref} src={ImageLoading} />
+                                        <img
+                                            className="message-image"
+                                            ref={ref}
+                                            src={ImageLoading}
+                                        />
                                     )}
+                                    <div className="message-actions">
+                                        <img
+                                            className="action-icon"
+                                            src={Emoji}
+                                        />
+                                        <img
+                                            className="action-icon more"
+                                            src={More}
+                                        />
+                                    </div>
                                 </div>
                             );
                         }

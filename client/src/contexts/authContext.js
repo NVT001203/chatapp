@@ -1,9 +1,10 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import {
     authInstance,
     privateInstance,
     publicInstance,
 } from "../config/axiosConfig";
+import { socket } from "../socket/socket";
 
 export const AuthContext = createContext();
 
@@ -17,6 +18,8 @@ export const AuthContextProvider = ({ children }) => {
                 })
                 .then(({ data }) => {
                     if (data.status == "success") {
+                        setCurrentUser({});
+                        socket.disconnect();
                         return true;
                     } else return false;
                 })
@@ -28,6 +31,15 @@ export const AuthContextProvider = ({ children }) => {
                 reject("error");
             });
     };
+
+    useEffect(() => {
+        if (Object.keys(currentUser).length == 0) {
+            socket.close();
+        } else {
+            socket.connect();
+            socket.emit("user_online", { user_id: currentUser.user_id });
+        }
+    }, [currentUser.user_id]);
 
     const refreshToken = async () => {
         return privateInstance

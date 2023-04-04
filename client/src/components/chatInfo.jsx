@@ -11,11 +11,15 @@ import { storage } from "../config/firebase/firebase";
 import AddUser from "../imgs/user.png";
 import RemoveUser from "../imgs/removeUser.png";
 import AddAdmin from "../imgs/addAdmin.png";
+import catLoading from "../imgs/LoadingError.gif";
+import Loading from "../imgs/Loading.gif";
+import { socket } from "../socket/socket";
 
 function ChatInfo({ data }) {
     const { toast, hidden, setHidden, currentUser, refreshToken } = data;
     const { currentChat, setCurrentChat } = useContext(ChatContext);
-    const { store, dispatch } = useContext(StoreContext);
+    const { store, dispatch, setUpdatedCurrentChat, sortChats } =
+        useContext(StoreContext);
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState(null);
     const [groupNameToggle, setGroupNameToggle] = useState(false);
@@ -26,23 +30,27 @@ function ChatInfo({ data }) {
     const [usersAdded, setUserAdded] = useState([]);
     const [showAllMembers, setShowAllMembers] = useState(false);
     const [showAllAdmins, setShowAllAdmins] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [loadingError, setLoadingError] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         if (!currentChat?.is_group) {
-            setName(
-                // eslint-disable-next-line eqeqeq
+            const name =
                 currentChat?.members[0] != currentUser.user_id
                     ? store.users[currentChat?.members[0]]?.display_name
-                    : store.users[currentChat?.members[1]]?.display_name
+                    : store.users[currentChat?.members[1]]?.display_name;
+            setName(
+                // eslint-disable-next-line eqeqeq
+                name
             );
         } else {
-            setName(
+            const name =
                 currentChat?.name ||
-                    `${currentChat.members.map(
-                        (id) => store.users[id].display_name
-                    )}`
-            );
+                `${currentChat.members.map(
+                    (id) => store.users[id].display_name
+                )}`;
+            setName(name);
         }
         const getPhotos = async () => {
             console.log({
@@ -130,6 +138,9 @@ function ChatInfo({ data }) {
                     type: "ADD_CHATS",
                     chats: { [data.elements.id]: data.elements },
                 });
+                socket.emit("update-chat", {
+                    chat: data.elements,
+                });
                 setCurrentChat(data.elements);
             } catch (err) {
                 const data = err.response.data;
@@ -143,6 +154,9 @@ function ChatInfo({ data }) {
                             dispatch({
                                 type: "ADD_CHATS",
                                 chats: { [data.elements.id]: data.elements },
+                            });
+                            socket.emit("update-chat", {
+                                chat: data.elements,
                             });
                             setCurrentChat(data.elements);
                         })
@@ -190,6 +204,9 @@ function ChatInfo({ data }) {
                     type: "ADD_CHATS",
                     chats: { [data.elements.id]: data.elements },
                 });
+                socket.emit("update-chat", {
+                    chat: data.elements,
+                });
                 setCurrentChat(data.elements);
             } catch (err) {
                 const data = err.response.data;
@@ -209,6 +226,9 @@ function ChatInfo({ data }) {
                             dispatch({
                                 type: "ADD_CHATS",
                                 chats: { [data.elements.id]: data.elements },
+                            });
+                            socket.emit("update-chat", {
+                                chat: data.elements,
                             });
                             setCurrentChat(data.elements);
                         })
@@ -244,6 +264,9 @@ function ChatInfo({ data }) {
                 type: "ADD_CHATS",
                 chats: { [data.elements.id]: data.elements },
             });
+            socket.emit("update-chat", {
+                chat: data.elements,
+            });
             setCurrentChat(data.elements);
         } catch (err) {
             const data = err.response.data;
@@ -257,6 +280,9 @@ function ChatInfo({ data }) {
                         dispatch({
                             type: "ADD_CHATS",
                             chats: { [data.elements.id]: data.elements },
+                        });
+                        socket.emit("update-chat", {
+                            chat: data.elements,
                         });
                         setCurrentChat(data.elements);
                     })
@@ -291,6 +317,7 @@ function ChatInfo({ data }) {
                         type: "ADD_USERS",
                         users: friendsObj,
                     });
+
                     setFriends(data.elements);
                     setSearched(true);
                     setSearchUserToggle(true);
@@ -344,6 +371,7 @@ function ChatInfo({ data }) {
     };
 
     const handleAddMembers = async (e) => {
+        if (usersAdded.length == 0) return toast("Please choose users!");
         try {
             const { data } = await publicInstance.put(
                 `/chat/add_members/${currentChat.id}`,
@@ -352,11 +380,31 @@ function ChatInfo({ data }) {
             if (data.status == "error") {
                 return toast(data.message);
             }
+            let members = {};
+            const allUsers = [
+                ...data.elements.chat.members,
+                ...data.elements.chat.members_leaved,
+            ];
+            allUsers.forEach((member) => {
+                members = {
+                    ...members,
+                    [member]: store.users[member],
+                };
+            });
             dispatch({
                 type: "ADD_CHATS",
-                chats: { [data.elements.id]: data.elements },
+                chats: { [data.elements.chat.id]: data.elements.chat },
             });
-            setCurrentChat(data.elements);
+            dispatch({
+                type: "ADD_MESSAGES",
+                messages: data.elements.notices,
+            });
+            socket.emit("add-chat", {
+                chat: data.elements.chat,
+                notices: data.elements.notices,
+                members: members,
+            });
+            setCurrentChat(data.elements.chat);
             setSearchUserToggle(false);
             setSearched(false);
             setUserAdded([]);
@@ -370,11 +418,29 @@ function ChatInfo({ data }) {
                             `/chat/add_members/${currentChat.id}`,
                             { members: usersAdded }
                         );
+                        let members = {};
+                        data.elements.chat.members.forEach((member) => {
+                            members = {
+                                ...members,
+                                [member]: store.users[member],
+                            };
+                        });
                         dispatch({
                             type: "ADD_CHATS",
-                            chats: { [data.elements.id]: data.elements },
+                            chats: {
+                                [data.elements.chat.id]: data.elements.chat,
+                            },
                         });
-                        setCurrentChat(data.elements);
+                        dispatch({
+                            type: "ADD_MESSAGES",
+                            messages: data.elements.notices,
+                        });
+                        socket.emit("add-chat", {
+                            chat: data.elements.chat,
+                            notices: data.elements.notices,
+                            members: members,
+                        });
+                        setCurrentChat(data.elements.chat);
                         setSearchUserToggle(false);
                         setSearched(false);
                         setUserAdded([]);
@@ -402,6 +468,171 @@ function ChatInfo({ data }) {
                 setSearched(false);
                 setUserAdded([]);
                 return toast("Something went wrong! Please try again.");
+            }
+        }
+    };
+
+    const handleRemoveMember = async (member) => {
+        if (currentChat.members.length <= 3)
+            return toast("Group must be equal or greater than 3 members!");
+        setLoading(true);
+        try {
+            const { data } = await publicInstance.put(
+                `/chat/remove_member/${currentChat.id}`,
+                { member }
+            );
+            dispatch({
+                type: "ADD_CHATS",
+                chats: { [data.elements.chat.id]: data.elements.chat },
+            });
+            setCurrentChat(data.elements.chat);
+            dispatch({
+                type: "ADD_MESSAGES",
+                messages: data.elements.notice,
+            });
+            socket.emit("remove-member", {
+                chat: data.elements.chat,
+                member: member,
+                notice: data.elements.notice,
+            });
+            setLoading(false);
+        } catch (err) {
+            console.log(err);
+            const data = err.response.data;
+            if (data.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.put(
+                            `/chat/remove_member/${currentChat.id}`,
+                            { member }
+                        );
+                        dispatch({
+                            type: "ADD_CHATS",
+                            chats: {
+                                [data.elements.chat.id]: data.elements.chat,
+                            },
+                        });
+                        setCurrentChat(data.elements.chat);
+                        dispatch({
+                            type: "ADD_MESSAGES",
+                            messages: data.elements.notice,
+                        });
+                        socket.emit("remove-member", {
+                            chat: data.elements.chat,
+                            member: member,
+                            notice: data.elements.notice,
+                        });
+                        setLoading(false);
+                    })
+                    .catch((e) => {
+                        setLoading(false);
+                        if (e == "Server error") {
+                            setLoadingError(true);
+                            setTimeout(() => {
+                                setLoadingError(false);
+                            }, 6000);
+                            toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                setLoading(false);
+                setLoadingError(true);
+                setTimeout(() => {
+                    setLoadingError(false);
+                }, 6000);
+                toast("Server error! Please try again.");
+            }
+        }
+    };
+
+    const handleDeleteChat = async (chat) => {
+        setLoading(true);
+        try {
+            const { data } = await publicInstance.delete(
+                `/chat/delete_chat/${currentChat.id}`
+            );
+            setHidden(true);
+            dispatch({
+                type: "REMOVE_CHAT",
+                chat_id: chat.id,
+            });
+            setUpdatedCurrentChat((pre) => {
+                return {
+                    chat:
+                        Object.keys(store.chats).length == 0
+                            ? undefined
+                            : store.chats[
+                                  sortChats(store.chats).reverse()[0][1]
+                              ],
+                };
+            });
+            socket.emit("delete-chat", {
+                chat: data.elements.chat,
+            });
+            setLoading(false);
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.delete(
+                            `/chat/delete_chat/${currentChat.id}`
+                        );
+                        setHidden(true);
+                        dispatch({
+                            type: "REMOVE_CHAT",
+                            chat_id: chat.id,
+                        });
+                        setUpdatedCurrentChat((pre) => {
+                            return {
+                                chat:
+                                    Object.keys(store.chats).length == 0
+                                        ? undefined
+                                        : store.chats[
+                                              sortChats(
+                                                  store.chats
+                                              ).reverse()[0][1]
+                                          ],
+                            };
+                        });
+                        socket.emit("delete-chat", {
+                            chat: data.elements.chat,
+                        });
+                        setLoading(false);
+                    })
+                    .catch((e) => {
+                        setHidden(true);
+                        setLoading(false);
+                        if (e == "Server error") {
+                            setLoadingError(true);
+                            setTimeout(() => {
+                                setLoadingError(false);
+                            }, 6000);
+                            toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                setHidden(true);
+                setLoading(false);
+                setLoadingError(true);
+                setTimeout(() => {
+                    setLoadingError(false);
+                }, 6000);
+                toast("Server error! Please try again.");
             }
         }
     };
@@ -483,8 +714,22 @@ function ChatInfo({ data }) {
                                                 currentUser.user_id
                                             ) && (
                                                 <div>
-                                                    <img src={AddAdmin} />
-                                                    <img src={RemoveUser} />
+                                                    <img
+                                                        onClick={() => {
+                                                            handleRemoveMember(
+                                                                member
+                                                            );
+                                                        }}
+                                                        src={AddAdmin}
+                                                    />
+                                                    <img
+                                                        onClick={() =>
+                                                            handleRemoveMember(
+                                                                member
+                                                            )
+                                                        }
+                                                        src={RemoveUser}
+                                                    />
                                                 </div>
                                             )}
                                         </div>
@@ -796,11 +1041,53 @@ function ChatInfo({ data }) {
                                 )}
                             </span>
                         )}
-
-                        <span>Quick emoji</span>
+                        {currentChat &&
+                            currentChat.is_group &&
+                            currentChat.admins.includes(
+                                currentUser?.user_id
+                            ) && (
+                                <span onClick={handleDeleteChat}>
+                                    Add admin
+                                </span>
+                            )}
+                        {currentChat && !currentChat.is_group && (
+                            <span onClick={() => handleDeleteChat(currentChat)}>
+                                Delete chat
+                            </span>
+                        )}
                     </div>
+                    {currentChat && currentChat.is_group && (
+                        <div className="leave-wrapper">
+                            <button className="leave-btn">Leave group</button>
+                        </div>
+                    )}
+                    {currentChat &&
+                        currentChat.is_group &&
+                        currentChat.admins.includes(currentUser?.user_id) && (
+                            <div className="leave-wrapper">
+                                <button
+                                    onClick={() =>
+                                        handleDeleteChat(currentChat)
+                                    }
+                                    className="leave-btn"
+                                >
+                                    Delete group
+                                </button>
+                            </div>
+                        )}
                 </div>
             </div>
+            {loading && (
+                <div className="loading-wrapper">
+                    <img src={Loading} />
+                </div>
+            )}
+            {loadingError && (
+                <div className="loading-wrapper">
+                    <img src={catLoading} />
+                    <h3>Something went wrong! Please try again.</h3>
+                </div>
+            )}
         </div>
     );
 }

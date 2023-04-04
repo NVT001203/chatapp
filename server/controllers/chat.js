@@ -7,7 +7,8 @@ export const createChat = async (db, { user_id, friend_id }) => {
             chat_avatar varchar,
             members uuid[],
             admins uuid[], 
-            last_message text, 
+            members_leaved uuid[] default '{}',
+            last_message uuid, 
             background_image varchar,
             updated_at timestamp  
         )
@@ -30,7 +31,8 @@ export const createGroupChat = async (db, { members }) => {
             chat_avatar varchar,
             members text[],
             admins text[], 
-            last_message text, 
+            members_leaved uuid[] default '{}',
+            last_message uuid, 
             background_image varchar,
             updated_at timestamp  
         )
@@ -41,18 +43,38 @@ export const createGroupChat = async (db, { members }) => {
         members[0]
     }"}', true, current_timestamp)
         returning id, members, last_message, is_group, chat_avatar,
-        background_image, name, updated_at;
+        admins, background_image, name, updated_at;
     `);
     return new_group.rows[0];
 };
 
-export const addMembers = async (db, { chat_id, members }) => {
-    const add_members = await db.query(`
+export const addMembers = async (db, { chat_id, members, last_message }) => {
+    let add_members = await db.query(`
         update chats set members=array_cat(members, '{"${members.join(
             `", "`
-        )}"}'), updated_at=current_timestamp
-        where id='${chat_id}' returning *;
+        )}"}'), updated_at=current_timestamp, last_message='${last_message}'
+        where id::text='${chat_id}' returning *;
     `);
+    if (
+        add_members.rows[0].members_leaved.length != 0 &&
+        add_members.rows[0].members_leaved.length !=
+            add_members.rows[0].members_leaved.filter(
+                (member) => !members.includes(member)
+            ).length
+    ) {
+        const arr =
+            add_members.rows[0].members_leaved.filter(
+                (member) => !members.includes(member)
+            ).length > 0
+                ? `array['${add_members.rows[0].members_leaved
+                      .filter((member) => !members.includes(member))
+                      .join(`', '`)}']`
+                : `'{}'`;
+        add_members = await db.query(`
+            update chats set members_leaved=${arr}
+            where id::text='${chat_id}' returning *;
+        `);
+    }
     return add_members.rows[0];
 };
 
@@ -74,9 +96,10 @@ export const getAdmins = async (db, { chat_id }) => {
 
 export const removeMember = async (db, { chat_id, user_id }) => {
     const remove_members = await db.query(`
-        update chats set members=array_remove(members, '${user_id}') , 
+        update chats set members=array_remove(members, '${user_id}'),
+        members_leaved=array_append(members_leaved, '${user_id}'),
         updated_at=current_timestamp
-        where id='${chat_id}' returning members, updated_at;
+        where id='${chat_id}' returning *;
     `);
     return remove_members.rows[0];
 };
@@ -134,6 +157,29 @@ export const getChats = async (db, { user_id }) => {
             select * from chats where id in (select unnest(chats) from users where id='${user_id}') order by updated_at desc;
         `);
         return chats.rows;
+    } catch (e) {
+        if (e.message == `relation "chats" does not exist`) return [];
+        else throw new Error(e.message);
+    }
+};
+
+export const getChat = async (db, { chat_id }) => {
+    try {
+        const chat = await db.query(`
+            select * from chats where id::text='${chat_id}';
+        `);
+        return chat.rows[0];
+    } catch (e) {
+        if (e.message == `relation "chats" does not exist`) return [];
+        else throw new Error(e.message);
+    }
+};
+export const deleteChat = async (db, { chat_id }) => {
+    try {
+        const chat = await db.query(`
+            delete from chats where id::text='${chat_id}' returning *;
+        `);
+        return chat.rows[0];
     } catch (e) {
         if (e.message == `relation "chats" does not exist`) return [];
         else throw new Error(e.message);

@@ -6,25 +6,26 @@ import { ChatContext } from "../contexts/chatContext";
 import { StoreContext } from "../contexts/StoreContext";
 
 function Chats({ toast }) {
-    const { store, dispatch } = useContext(StoreContext);
+    const { store, dispatch, sortChats } = useContext(StoreContext);
     const { currentChat, setCurrentChat } = useContext(ChatContext);
     const { currentUser, refreshToken } = useContext(AuthContext);
     const navigate = useNavigate();
-    const sortChats = (chats) => {
-        let objsort = {};
-        Object.entries(chats).forEach(([key, value]) => {
-            objsort[value.updated_at] = key;
-        });
-        return Object.entries(objsort).sort();
-    };
     const handleGetMessages = async (chat) => {
         if (
             store.messages[chat.id] &&
-            Object.keys(store.messages[chat.id]).length > 1
+            Object.keys(store.messages[chat.id]).length > 20
         ) {
             return setCurrentChat(chat);
-        }
+        } else if (!store.messages[chat.id]) return setCurrentChat(chat);
         try {
+            for (const [id, message] of Object.entries(
+                store.messages[chat.id]
+            )) {
+                if (message.chat_created) {
+                    return setCurrentChat(chat);
+                }
+            }
+
             setCurrentChat(chat);
             const { data } = await publicInstance.get(
                 `/message/${chat.id}/get_messages`
@@ -36,6 +37,7 @@ function Chats({ toast }) {
                 });
             } else toast("Something went wrong! Please try again.");
         } catch (e) {
+            console.log(e);
             const data = e.response.data;
             if (data.message == "jwt expired") {
                 refreshToken()
@@ -93,6 +95,33 @@ function Chats({ toast }) {
                         let last_message = null;
                         if (data.last_message != null) {
                             if (
+                                store.messages[data.id][data.last_message]
+                                    .notice
+                            ) {
+                                const text_arr =
+                                    store.messages[data.id][
+                                        data.last_message
+                                    ].text.split("/u");
+                                last_message = `${
+                                    store.users[
+                                        store.messages[data.id][
+                                            data.last_message
+                                        ].sender
+                                    ].display_name == currentUser.display_name
+                                        ? "You"
+                                        : store.users[
+                                              store.messages[data.id][
+                                                  data.last_message
+                                              ].sender
+                                          ].display_name
+                                }: ${
+                                    text_arr[0] +
+                                    ` ${
+                                        store.users[text_arr[1]].display_name
+                                    } ` +
+                                    text_arr[2]
+                                }`;
+                            } else if (
                                 store.messages[data.id][data.last_message]?.text
                             ) {
                                 last_message = `${
@@ -154,7 +183,7 @@ function Chats({ toast }) {
                             name =
                                 data.name ||
                                 `${data.members.map(
-                                    (id) => store.users[id].display_name
+                                    (id) => `${store.users[id].display_name} `
                                 )}`;
                         }
 

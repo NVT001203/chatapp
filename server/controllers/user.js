@@ -119,6 +119,15 @@ export const removeChat = async (db, { user_id, chat_id }) => {
     else throw new Error("Remove failed!");
 };
 
+export const removeChats = async (db, { users_id, chat_id }) => {
+    const users = await db.query(`
+        update users set chats = array_remove(chats, '${chat_id}')
+        where id::text in (select unnest(array['${users_id.join(`', '`)}']))
+        returning *;
+    `);
+    return users.rows;
+};
+
 export const getUsers = async (db, { users_id }) => {
     const users = await db.query(`
         select id user_id, display_name, avatar_url from users where

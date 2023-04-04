@@ -6,7 +6,6 @@ import "./styles/messenger.scss";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../contexts/authContext";
 import { useNavigate } from "react-router-dom";
-// import { socket } from "../websocket/socket";
 import { StoreContext } from "../contexts/StoreContext";
 import { publicInstance } from "../config/axiosConfig";
 import LoadingResource from "../components/loadingResource";
@@ -18,14 +17,19 @@ function Messenger() {
     const [hidden, setHidden] = useState(true);
     const { dispatch } = useContext(StoreContext);
     const [loading, setLoading] = useState(true);
-
     const navigate = useNavigate();
+
     useEffect(() => {
         if (Object.keys(currentUser).length == 0) {
             getUser()
                 .then((user) => {
-                    if (user) setCurrentUser(user);
-                    else {
+                    if (user) {
+                        dispatch({
+                            type: "ADD_USERS",
+                            users: { [user.user_id]: user },
+                        });
+                        setCurrentUser(user);
+                    } else {
                         navigate("/login");
                     }
                 })
@@ -39,8 +43,10 @@ function Messenger() {
                     .then(({ data }) => {
                         const { chats, messages, users } = data.elements;
                         const chatsObj = {};
+                        const chatsArr = [];
                         for (const chat of chats) {
                             chatsObj[chat.id] = chat;
+                            chatsArr.push(chat.id);
                         }
                         const usersObj = {};
                         for (const user of users) {
@@ -73,8 +79,10 @@ function Messenger() {
                                 const { chats, messages, users } =
                                     data.elements;
                                 const chatsObj = {};
+                                const chatsArr = [];
                                 for (const chat of chats) {
                                     chatsObj[chat.id] = chat;
+                                    chatsArr.push(chat.id);
                                 }
                                 const usersObj = {};
                                 for (const user of users) {
@@ -96,13 +104,12 @@ function Messenger() {
                             });
                         } else navigate("/loading_error");
                     });
-                //     socket.emit("add-user", { user_id: currentUser?.user_id });
             } catch (e) {
                 setLoading(false);
                 navigate("/loading_error");
             }
         }
-    }, [currentUser]);
+    }, [currentUser.user_id]);
 
     return (
         <div>

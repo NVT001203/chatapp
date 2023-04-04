@@ -4,7 +4,7 @@ import { generatePasswordHash } from "./hash.js";
 export const addRefreshToken = async (db, { token, user_id }) => {
     await db.query(`
         create table if not exists refresh_tokens(
-            user_id varchar(255) not null,
+            user_id uuid not null,
             token varchar(255)
         );
     `);

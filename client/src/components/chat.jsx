@@ -20,10 +20,10 @@ function Chat({ data }) {
                     <div>
                         <Navbar
                             data={{
-                                currentChat,
-                                store,
-                                currentUser,
                                 setHidden: data.setHidden,
+                                currentChat,
+                                currentUser,
+                                store,
                             }}
                         />
                         <Messages data={{ currentChat, store, currentUser }} />
@@ -40,7 +40,6 @@ function Chat({ data }) {
                     </div>
                 )) || (
                 <div className="welcome">
-                    {" "}
                     <MessengerWelcome />
                 </div>
             )}

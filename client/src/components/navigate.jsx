@@ -1,6 +1,9 @@
 import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/authContext";
+import Messenger from "../imgs/messenger.png";
+import Settings from "../imgs/setting.png";
+import Logout from "../imgs/logout.png";
 // import ThemeSwitch from "./themeSwitchBtn";
 
 function Navigate({ toast }) {
@@ -12,6 +15,7 @@ function Navigate({ toast }) {
             .then((status) => {
                 if (status) {
                     setCurrentUser({});
+                    // dispatch({ type: "CLEAR_STORE" });
                     navigate("/login");
                 } else {
                     toast("Somthing went wrong! Please try again.");
@@ -58,20 +62,16 @@ function Navigate({ toast }) {
     return (
         <div className="navigate">
             <div className="first-item">
-                <div className="icon tabs"></div>
-                <div className="navigate-item">
-                    <div className="icon category"></div>
-                    <div className="icon messenger"></div>
-                    <div className="icon friends"></div>
-                </div>
+                <img className="logo" src={Messenger} />
             </div>
             <div className="second-item">
                 <div className="setting">
-                    <div className="icon setting"></div>
-                    <div
+                    <img src={Settings} className="icon" />
+                    <img
+                        src={Logout}
                         onClick={() => logout()}
-                        className="icon log-out"
-                    ></div>
+                        className="icon"
+                    />
                 </div>
                 <div className="user-account">
                     <img src={currentUser?.avatar_url} />
