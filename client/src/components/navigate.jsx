@@ -4,7 +4,6 @@ import { AuthContext } from "../contexts/authContext";
 import Messenger from "../imgs/messenger.png";
 import Settings from "../imgs/setting.png";
 import Logout from "../imgs/logout.png";
-// import ThemeSwitch from "./themeSwitchBtn";
 
 function Navigate({ toast }) {
     const { currentUser, setCurrentUser, signOut, refreshToken } =
@@ -15,7 +14,6 @@ function Navigate({ toast }) {
             .then((status) => {
                 if (status) {
                     setCurrentUser({});
-                    // dispatch({ type: "CLEAR_STORE" });
                     navigate("/login");
                 } else {
                     toast("Somthing went wrong! Please try again.");

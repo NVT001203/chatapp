@@ -59,6 +59,7 @@ function Register() {
                 display_name,
                 password,
                 avatar_url,
+                repeat_password: confirm,
             };
             const res = await authInstance.post("/register", user_info, {
                 withCredentials: true,

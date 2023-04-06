@@ -2,6 +2,10 @@ import { Router } from "express";
 import { client } from "../../db/db.config.js";
 import dotenv from "dotenv";
 import {
+    credential_validate_register,
+    credential_validate_login,
+} from "../../helpers/validate.js";
+import {
     comparePassword,
     generateAccessToken,
     verifyRefreshToken,
@@ -15,6 +19,7 @@ import {
     getRefreshToken,
     updateRefreshToken,
 } from "../../controllers/auth.js";
+import { handleError } from "../../helpers/handleError.js";
 import { createUser, getPublicInfo } from "../../controllers/user.js";
 import jwt from "jsonwebtoken";
 
@@ -39,12 +44,12 @@ authRouter.post("/get_userExists", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({
-                code: 400,
-                status: "error",
-                message: "Please provide email and password",
-            });
+        const { value, error } = credential_validate_login.validate({
+            email,
+            password,
+        });
+        if (error) {
+            throw new Error(error.message);
         } else {
             const user = await getPrivateInfo(client, { email });
             if (!user)
@@ -90,24 +95,22 @@ authRouter.post("/login", async (req, res) => {
             }
         }
     } catch (err) {
-        res.status(500).json({
-            code: 500,
-            status: "error",
-            message:
-                err.message == "Update failed!" ? "Server error" : err.message,
-        });
+        console.log(err.message);
+        return handleError(err, res);
     }
 });
 
 authRouter.post("/register", async (req, res) => {
     try {
-        const { email, password, display_name, avatar_url } = req.body;
-        if (!email || !password) {
-            res.status(400).json({
-                code: 400,
-                status: "error",
-                message: "Please provide email and password",
-            });
+        const { email, password, display_name, avatar_url, repeat_password } =
+            req.body;
+        const { value, error } = credential_validate_register.validate({
+            email,
+            password,
+            repeat_password,
+        });
+        if (error) {
+            throw new Error(error.message);
         } else {
             const user = await getPrivateInfo(client, { email });
             if (user) {
@@ -150,12 +153,8 @@ authRouter.post("/register", async (req, res) => {
             }
         }
     } catch (err) {
-        res.status(500).json({
-            code: 500,
-            status: "error",
-            message:
-                err.message == "Update failed!" ? "Server error" : err.message,
-        });
+        console.log(err.message);
+        return handleError(err, res);
     }
 });
 
