@@ -17,6 +17,7 @@ import {
 } from "../controllers/chat.js";
 import { addChat, removeChat, removeChats } from "../controllers/user.js";
 import {
+    createAddAdminNotice,
     createAddAndRemoveMembersNotices,
     createNotice,
     deleteMessages,
@@ -173,8 +174,11 @@ chatRouter.put("/remove_member/:chat_id", async (req, res) => {
         const chat_id = req.params.chat_id;
         const { user_id } = req.user;
         const { member } = req.body;
-        const { admins } = await getAdmins(client, { chat_id });
-        if (admins.includes(user_id)) {
+        const chat = await getChat(client, { chat_id });
+
+        if (!chat.members.includes(member))
+            throw new Error("The user is not a member of the group");
+        if (chat.admins.includes(user_id)) {
             const chat = await removeMember(client, {
                 chat_id,
                 user_id: member,
@@ -247,7 +251,7 @@ chatRouter.put("/get_members/:chat_id", async (req, res) => {
         const chat_id = req.params.chat_id;
         const { user_id } = req.user;
         const { members } = await getAllMembers(client, { chat_id });
-        if (!members.includes)
+        if (!members.includes(user_id))
             throw new Error("Only members have this permission");
         res.status(200).json({
             code: 200,
@@ -265,7 +269,7 @@ chatRouter.put("/set_chatAvatar/:chat_id", async (req, res) => {
         const { chat_avatar } = req.body;
         const { user_id } = req.user;
         const { members } = await getAllMembers(client, { chat_id });
-        if (!members.includes)
+        if (!members.includes(user_id))
             throw new Error("Only members have this permission");
         const chat = await setChatAvatar(client, { chat_id, chat_avatar });
         res.status(200).json({
@@ -300,7 +304,7 @@ chatRouter.delete("/delete_chat/:chat_id", async (req, res) => {
                 });
             }
         } else {
-            if (!chat.members.includes)
+            if (!chat.members.includes(user_id))
                 throw new Error("Only members have this permission");
 
             const chat_deleted = await deleteChat(client, { chat_id });
@@ -313,6 +317,73 @@ chatRouter.delete("/delete_chat/:chat_id", async (req, res) => {
                 code: 200,
                 status: "success",
                 elements: { chat: chat_deleted, members: users },
+            });
+        }
+    } catch (e) {
+        console.log(e);
+        return handleError(e, res);
+    }
+});
+
+chatRouter.delete("/leave_group/:chat_id", async (req, res) => {
+    try {
+        const chat_id = req.params.chat_id;
+        const { user_id } = req.user;
+        const { members } = await getAllMembers(client, { chat_id });
+        if (!members.includes(user_id))
+            throw new Error("Only members have this permission");
+        const chat = await removeMember(client, { chat_id, user_id });
+        const { id, display_name, chats, avatar_url } = await removeChat(
+            client,
+            { user_id, chat_id }
+        );
+        const notice = await createNotice(client, {
+            text: `${display_name} was leave to group`,
+            sender: id,
+            chat_id,
+        });
+        res.status(200).json({
+            code: 200,
+            status: "success",
+            elements: { chat, notice, member: user_id },
+        });
+    } catch (e) {
+        console.log(e);
+        return handleError(e, res);
+    }
+});
+
+chatRouter.put("/add_admin/:chat_id", async (req, res) => {
+    try {
+        const chat_id = req.params.chat_id;
+        const { member } = req.body;
+        const { user_id } = req.user;
+        const chat = await getChat(client, { chat_id });
+
+        if (!chat.admins.includes(user_id))
+            throw new Error("Only members have this permission");
+        if (!chat.members.includes(member))
+            throw new Error("The user is not a member of the group");
+        if (chat.admins.includes(member))
+            res.status(200).json({
+                code: 200,
+                status: "error",
+                message: "Member is admin",
+            });
+        else {
+            const chat_updated = await addAdmins(client, {
+                chat_id,
+                members: [member],
+            });
+            const notice = await createAddAdminNotice(client, {
+                user_id,
+                member,
+                chat_id,
+            });
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                elements: { chat: chat_updated, notice },
             });
         }
     } catch (e) {

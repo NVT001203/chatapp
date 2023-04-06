@@ -81,7 +81,7 @@ export const addMembers = async (db, { chat_id, members, last_message }) => {
 export const addAdmins = async (db, { chat_id, members }) => {
     const add_admins = await db.query(`
         update chats set admins=array_cat(admins, '{"${members.join(`", "`)}"}')
-        where id='${chat_id}' returning admins;
+        where id='${chat_id}' returning *;
     `);
     return add_admins.rows[0];
 };
@@ -98,6 +98,7 @@ export const removeMember = async (db, { chat_id, user_id }) => {
     const remove_members = await db.query(`
         update chats set members=array_remove(members, '${user_id}'),
         members_leaved=array_append(members_leaved, '${user_id}'),
+        admins=array_remove(admins, '${user_id}'),
         updated_at=current_timestamp
         where id='${chat_id}' returning *;
     `);
@@ -109,7 +110,7 @@ export const addLastMessage = async (db, { chat_id, message }) => {
         update chats set
         updated_at=(select created_at from messages where id='${message}'),
         last_message='${message}'
-        where id='${chat_id}' returning updated_at, last_message;
+        where id='${chat_id}' returning *;
     `);
     return add_message.rows[0];
 };

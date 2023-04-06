@@ -193,6 +193,18 @@ export const createAddAndRemoveMembersNotices = async (
     return notices.rows;
 };
 
+export const createAddAdminNotice = async (
+    db,
+    { user_id, member, chat_id }
+) => {
+    const notice = await db.query(`
+        insert into notices(chat_id, text, sender) 
+        values ${`('${chat_id}', 'has designated the /u${member}/u as an administrator', '${user_id}')`} 
+        returning id, notice, chat_created, chat_id, text, sender, created_at;
+    `);
+    return notice.rows[0];
+};
+
 export const deleteMessages = async (db, { chat_id }) => {
     try {
         const notices = await db.query(`

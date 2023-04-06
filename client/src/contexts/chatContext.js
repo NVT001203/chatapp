@@ -1,16 +1,9 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { StoreContext } from "./StoreContext";
+import { createContext, useState } from "react";
 
 export const ChatContext = createContext();
 
 export const ChatContextProvider = ({ children }) => {
     const [currentChat, setCurrentChat] = useState(undefined);
-    const { updatedCurrentChat } = useContext(StoreContext);
-
-    useEffect(() => {
-        console.log(updatedCurrentChat.chat);
-        setCurrentChat(updatedCurrentChat.chat);
-    }, [updatedCurrentChat]);
 
     return (
         <ChatContext.Provider value={{ currentChat, setCurrentChat }}>

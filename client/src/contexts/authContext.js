@@ -10,6 +10,7 @@ export const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState({});
+    const [currentSocket, setCurrentSocket] = useState(null);
     const signOut = async () => {
         if (currentUser && currentUser.user_id) {
             return publicInstance
@@ -34,12 +35,19 @@ export const AuthContextProvider = ({ children }) => {
 
     useEffect(() => {
         if (Object.keys(currentUser).length == 0) {
-            socket.close();
+            socket.connected && socket.close();
         } else {
             socket.connect();
-            socket.emit("user_online", { user_id: currentUser.user_id });
+            socket.on("connect", () => {
+                setCurrentSocket(socket.id);
+            });
         }
     }, [currentUser.user_id]);
+
+    useEffect(() => {
+        socket.connected &&
+            socket.emit("user_online", { user_id: currentUser.user_id });
+    }, [currentSocket, socket.connected]);
 
     const refreshToken = async () => {
         return privateInstance
@@ -98,6 +106,7 @@ export const AuthContextProvider = ({ children }) => {
                 getUser,
                 refreshToken,
                 signOut,
+                currentSocket,
             }}
         >
             {children}

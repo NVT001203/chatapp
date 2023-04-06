@@ -110,13 +110,12 @@ export const addChat = async (db, { user_id, chat_id }) => {
     else throw new Error("Add failed!");
 };
 export const removeChat = async (db, { user_id, chat_id }) => {
-    const chats = await db.query(`
+    const chat = await db.query(`
         update users set chats = array_remove(chats, '${chat_id}')
         where id = '${user_id}'
-        returning chats;
+        returning id, display_name, chats, avatar_url;
     `);
-    if (chats.rowCount == 1) return { chats };
-    else throw new Error("Remove failed!");
+    return chat.rows[0];
 };
 
 export const removeChats = async (db, { users_id, chat_id }) => {

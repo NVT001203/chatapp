@@ -117,6 +117,7 @@ function Search({ toast }) {
                     chat: data.elements.chat,
                     notices: [data.elements.notice],
                     members: { [currentUser.user_id]: currentUser },
+                    members_added: data.elements.chat.members,
                 });
             })
             .catch((error) => {
@@ -152,6 +153,7 @@ function Search({ toast }) {
                                 chat: data.elements.chat,
                                 notices: [data.elements.notice],
                                 members: { [currentUser.user_id]: currentUser },
+                                members_added: data.elements.chat.members,
                             });
                         })
                         .catch((e) => {
@@ -202,6 +204,7 @@ function Search({ toast }) {
                     chat: data.elements.chat,
                     notices: [data.elements.notice],
                     members: members,
+                    members_added: data.elements.chat.members,
                 });
                 setGroupMembers([]);
             } catch (e) {
@@ -237,11 +240,11 @@ function Search({ toast }) {
                                 chat: data.elements.chat,
                                 notices: [data.elements.notice],
                                 members: members,
+                                members_added: data.elements.chat.members,
                             });
                             setGroupMembers([]);
                         })
                         .catch((e) => {
-                            console.log(e);
                             setGroupMembers([]);
                             toast(
                                 "The login session has expired! Please login again."

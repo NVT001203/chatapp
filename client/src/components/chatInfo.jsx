@@ -18,8 +18,7 @@ import { socket } from "../socket/socket";
 function ChatInfo({ data }) {
     const { toast, hidden, setHidden, currentUser, refreshToken } = data;
     const { currentChat, setCurrentChat } = useContext(ChatContext);
-    const { store, dispatch, setUpdatedCurrentChat, sortChats } =
-        useContext(StoreContext);
+    const { store, dispatch, sortChats } = useContext(StoreContext);
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState(null);
     const [groupNameToggle, setGroupNameToggle] = useState(false);
@@ -34,6 +33,9 @@ function ChatInfo({ data }) {
     const [loadingError, setLoadingError] = useState(false);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        !currentChat && setHidden(true);
+    }, [currentChat]);
     useEffect(() => {
         if (!currentChat?.is_group) {
             const name =
@@ -403,6 +405,7 @@ function ChatInfo({ data }) {
                 chat: data.elements.chat,
                 notices: data.elements.notices,
                 members: members,
+                members_added: usersAdded,
             });
             setCurrentChat(data.elements.chat);
             setSearchUserToggle(false);
@@ -439,6 +442,7 @@ function ChatInfo({ data }) {
                             chat: data.elements.chat,
                             notices: data.elements.notices,
                             members: members,
+                            members_added: usersAdded,
                         });
                         setCurrentChat(data.elements.chat);
                         setSearchUserToggle(false);
@@ -497,7 +501,6 @@ function ChatInfo({ data }) {
             });
             setLoading(false);
         } catch (err) {
-            console.log(err);
             const data = err.response.data;
             if (data.message == "jwt expired") {
                 refreshToken()
@@ -563,15 +566,18 @@ function ChatInfo({ data }) {
                 type: "REMOVE_CHAT",
                 chat_id: chat.id,
             });
-            setUpdatedCurrentChat((pre) => {
-                return {
-                    chat:
-                        Object.keys(store.chats).length == 0
-                            ? undefined
-                            : store.chats[
-                                  sortChats(store.chats).reverse()[0][1]
-                              ],
-                };
+            setCurrentChat((pre) => {
+                console.log({ pre });
+                if (pre?.id != chat.id) return pre;
+                else
+                    return Object.keys(store.chats).filter((id) => id != pre.id)
+                        .length == 0
+                        ? undefined
+                        : store.chats[
+                              sortChats(store.chats).reverse()[0][1] != pre.id
+                                  ? sortChats(store.chats).reverse()[0][1]
+                                  : sortChats(store.chats).reverse()[1][1]
+                          ];
             });
             socket.emit("delete-chat", {
                 chat: data.elements.chat,
@@ -590,17 +596,25 @@ function ChatInfo({ data }) {
                             type: "REMOVE_CHAT",
                             chat_id: chat.id,
                         });
-                        setUpdatedCurrentChat((pre) => {
-                            return {
-                                chat:
-                                    Object.keys(store.chats).length == 0
-                                        ? undefined
-                                        : store.chats[
-                                              sortChats(
-                                                  store.chats
-                                              ).reverse()[0][1]
-                                          ],
-                            };
+                        setCurrentChat((pre) => {
+                            console.log({ pre });
+                            if (pre?.id != chat.id) return pre;
+                            else
+                                return Object.keys(store.chats).filter(
+                                    (id) => id != pre.id
+                                ).length == 0
+                                    ? undefined
+                                    : store.chats[
+                                          sortChats(
+                                              store.chats
+                                          ).reverse()[0][1] != pre.id
+                                              ? sortChats(
+                                                    store.chats
+                                                ).reverse()[0][1]
+                                              : sortChats(
+                                                    store.chats
+                                                ).reverse()[1][1]
+                                      ];
                         });
                         socket.emit("delete-chat", {
                             chat: data.elements.chat,
@@ -636,157 +650,380 @@ function ChatInfo({ data }) {
             }
         }
     };
+    const handleLeaveGroup = async (chat) => {
+        setLoading(true);
+        try {
+            const { data } = await publicInstance.delete(
+                `/chat/leave_group/${chat.id}`
+            );
+            setHidden(true);
+            dispatch({
+                type: "REMOVE_CHAT",
+                chat_id: chat.id,
+            });
+            setCurrentChat((pre) => {
+                return Object.keys(store.chats).filter((id) => id != pre?.id)
+                    .length == 0
+                    ? undefined
+                    : store.chats[
+                          sortChats(store.chats).reverse()[0][1] != pre?.id
+                              ? sortChats(store.chats).reverse()[0][1]
+                              : sortChats(store.chats).reverse()[1][1]
+                      ];
+            });
+            socket.emit("leave-group", {
+                chat: data.elements.chat,
+                notice: data.elements.notice,
+                member: data.elements.member,
+            });
+            setLoading(false);
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.delete(
+                            `/chat/leave_group/${chat.id}`
+                        );
+                        setHidden(true);
+                        dispatch({
+                            type: "REMOVE_CHAT",
+                            chat_id: chat.id,
+                        });
+
+                        setCurrentChat((pre) => {
+                            return Object.keys(store.chats).filter(
+                                (id) => id != pre?.id
+                            ).length == 0
+                                ? undefined
+                                : store.chats[
+                                      sortChats(store.chats).reverse()[0][1] !=
+                                      pre?.id
+                                          ? sortChats(
+                                                store.chats
+                                            ).reverse()[0][1]
+                                          : sortChats(
+                                                store.chats
+                                            ).reverse()[1][1]
+                                  ];
+                        });
+                        socket.emit("leave-group", {
+                            chat: data.elements.chat,
+                            notice: data.elements.notice,
+                            member: data.elements.member,
+                        });
+                        setLoading(false);
+                    })
+                    .catch((e) => {
+                        setHidden(true);
+                        setLoading(false);
+                        if (e == "Server error") {
+                            setLoadingError(true);
+                            setTimeout(() => {
+                                setLoadingError(false);
+                            }, 6000);
+                            toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                setHidden(true);
+                setLoading(false);
+                setLoadingError(true);
+                setTimeout(() => {
+                    setLoadingError(false);
+                }, 6000);
+                toast("Server error! Please try again.");
+            }
+        }
+    };
+
+    const hanldeAddAdmin = async (member, chat) => {
+        if (currentChat.admins.includes(member))
+            return toast("Member is a admin");
+        setLoading(true);
+        try {
+            const { data } = await publicInstance.put(
+                `/chat/add_admin/${chat.id}`,
+                { member }
+            );
+            if (data.status == "success") {
+                dispatch({
+                    type: "ADD_CHATS",
+                    chats: { [data.elements.chat.id]: data.elements.chat },
+                });
+                setCurrentChat(data.elements.chat);
+                dispatch({
+                    type: "ADD_MESSAGES",
+                    messages: [data.elements.notice],
+                });
+                socket.emit("add-admin", {
+                    chat: data.elements.chat,
+                    notice: data.elements.notice,
+                });
+            } else {
+                toast("Member is a admin");
+            }
+            setLoading(false);
+        } catch (err) {
+            console.log(err);
+            const data = err.response.data;
+            if (data.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.put(
+                            `/chat/add_admin/${chat.id}`,
+                            { member }
+                        );
+                        if (data.status == "success") {
+                            dispatch({
+                                type: "ADD_CHATS",
+                                chats: {
+                                    [data.elements.chat.id]: data.elements.chat,
+                                },
+                            });
+                            setCurrentChat(data.elements.chat);
+                            dispatch({
+                                type: "ADD_MESSAGES",
+                                messages: [data.elements.notice],
+                            });
+                            socket.emit("add-admin", {
+                                chat: data.elements.chat,
+                                notice: data.elements.notice,
+                            });
+                        } else {
+                            toast("Member is a admin");
+                        }
+                        setLoading(false);
+                    })
+                    .catch((e) => {
+                        setLoading(false);
+                        if (e == "Server error") {
+                            setLoadingError(true);
+                            setTimeout(() => {
+                                setLoadingError(false);
+                            }, 6000);
+                            toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                setLoading(false);
+                setLoadingError(true);
+                setTimeout(() => {
+                    setLoadingError(false);
+                }, 6000);
+                toast("Server error! Please try again.");
+            }
+        }
+    };
 
     return (
-        <div className={hidden ? "info-container hidden" : "info-container"}>
-            <div className="chat-title">
-                <span>{name}</span>
-                <img
-                    src={Close}
-                    className="close"
-                    onClick={() => setHidden(true)}
-                />
-            </div>
-            <div className="chat_info-wrapper">
-                <div className="members">
-                    <div className="title">
-                        <div>
-                            <div className="friends"></div>
-                            <span>MEMBER ({currentChat?.members.length})</span>
-                        </div>
-                        <span onClick={() => setShowAllMembers(true)}>
-                            Show All
-                        </span>
-                    </div>
-                    {currentChat?.members.map((member, index) => {
-                        if (index > 2) return;
-                        return (
-                            <div key={index} className="member-info">
-                                <div className="wrapper">
-                                    <div
-                                        className="avatar"
-                                        style={{
-                                            backgroundImage: `url(${store.users[member].avatar_url})`,
-                                        }}
-                                    ></div>
-                                    <span className="member-name">
-                                        {store.users[member].display_name}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    {showAllMembers && (
-                        <div className="show_all-members">
-                            <span
-                                className="x-symbol"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowAllMembers(false);
-                                }}
-                            >
-                                ✗
-                            </span>
-                            <div className="container">
-                                <span className="title-members">Members</span>
-                                {currentChat?.members.map((member, index) => {
-                                    return (
-                                        <div
-                                            className="member"
-                                            key={store.users[member].user_id}
-                                        >
-                                            <div className="info-wrapper">
-                                                <div
-                                                    className="avatar"
-                                                    style={{
-                                                        backgroundImage: `url(${store.users[member].avatar_url})`,
-                                                    }}
-                                                ></div>
-                                                <span className={"member_name"}>
-                                                    {
-                                                        store.users[member]
-                                                            .display_name
-                                                    }
-                                                </span>
-                                            </div>
-                                            {currentChat?.admins?.includes(
-                                                currentUser.user_id
-                                            ) && (
-                                                <div>
-                                                    <img
-                                                        onClick={() => {
-                                                            handleRemoveMember(
-                                                                member
-                                                            );
-                                                        }}
-                                                        src={AddAdmin}
-                                                    />
-                                                    <img
-                                                        onClick={() =>
-                                                            handleRemoveMember(
-                                                                member
-                                                            )
-                                                        }
-                                                        src={RemoveUser}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+        currentChat && (
+            <div
+                className={hidden ? "info-container hidden" : "info-container"}
+            >
+                <div className="chat-title">
+                    <span>{name}</span>
+                    <img
+                        src={Close}
+                        className="close"
+                        onClick={() => setHidden(true)}
+                    />
                 </div>
-                {currentChat?.admins && (
+                <div className="chat_info-wrapper">
                     <div className="members">
                         <div className="title">
                             <div>
                                 <div className="friends"></div>
                                 <span>
-                                    ADMINS ({currentChat?.admins.length})
+                                    MEMBER (
+                                    {
+                                        store.chats[currentChat?.id].members
+                                            .length
+                                    }
+                                    )
                                 </span>
                             </div>
-                            <span onClick={() => setShowAllAdmins(true)}>
+                            <span onClick={() => setShowAllMembers(true)}>
                                 Show All
                             </span>
                         </div>
-                        {currentChat?.admins.map((member, index) => {
-                            if (index > 2) return;
-                            return (
-                                <div key={index} className="member-info">
-                                    <div className="wrapper">
-                                        <div
-                                            className="avatar"
-                                            style={{
-                                                backgroundImage: `url(${store.users[member].avatar_url})`,
-                                            }}
-                                        ></div>
-                                        <span className="member-name">
-                                            {store.users[member].display_name}
-                                        </span>
+                        {store.chats[currentChat?.id].members.map(
+                            (member, index) => {
+                                if (index > 2) return;
+                                return (
+                                    <div key={index} className="member-info">
+                                        <div className="wrapper">
+                                            <div
+                                                className="avatar"
+                                                style={{
+                                                    backgroundImage: `url(${store.users[member].avatar_url})`,
+                                                }}
+                                            ></div>
+                                            <span className="member-name">
+                                                {
+                                                    store.users[member]
+                                                        .display_name
+                                                }
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                        {showAllAdmins && (
+                                );
+                            }
+                        )}
+
+                        {showAllMembers && (
                             <div className="show_all-members">
                                 <span
                                     className="x-symbol"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setShowAllAdmins(false);
+                                        setShowAllMembers(false);
                                     }}
                                 >
                                     ✗
                                 </span>
                                 <div className="container">
                                     <span className="title-members">
-                                        Admins
+                                        Members
                                     </span>
-                                    {currentChat?.admins.map(
+                                    {store.chats[currentChat?.id].members.map(
                                         (member, index) => {
+                                            return (
+                                                <div
+                                                    className="member"
+                                                    key={
+                                                        store.users[member]
+                                                            .user_id
+                                                    }
+                                                >
+                                                    <div className="info-wrapper">
+                                                        <div
+                                                            className="avatar"
+                                                            style={{
+                                                                backgroundImage: `url(${store.users[member].avatar_url})`,
+                                                            }}
+                                                        ></div>
+                                                        <span
+                                                            className={
+                                                                "member_name"
+                                                            }
+                                                        >
+                                                            {
+                                                                store.users[
+                                                                    member
+                                                                ].display_name
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    {store.chats[
+                                                        currentChat?.id
+                                                    ].admins?.includes(
+                                                        currentUser.user_id
+                                                    ) && (
+                                                        <div>
+                                                            <img
+                                                                onClick={() => {
+                                                                    hanldeAddAdmin(
+                                                                        member,
+                                                                        currentChat
+                                                                    );
+                                                                }}
+                                                                src={AddAdmin}
+                                                            />
+                                                            <img
+                                                                onClick={() =>
+                                                                    handleRemoveMember(
+                                                                        member
+                                                                    )
+                                                                }
+                                                                src={RemoveUser}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    {store.chats[currentChat?.id].admins && (
+                        <div className="members">
+                            <div className="title">
+                                <div>
+                                    <div className="friends"></div>
+                                    <span>
+                                        ADMINS (
+                                        {
+                                            store.chats[currentChat?.id].admins
+                                                .length
+                                        }
+                                        )
+                                    </span>
+                                </div>
+                                <span onClick={() => setShowAllAdmins(true)}>
+                                    Show All
+                                </span>
+                            </div>
+                            {store.chats[currentChat?.id].admins.map(
+                                (member, index) => {
+                                    if (index > 2) return;
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="member-info"
+                                        >
+                                            <div className="wrapper">
+                                                <div
+                                                    className="avatar"
+                                                    style={{
+                                                        backgroundImage: `url(${store.users[member].avatar_url})`,
+                                                    }}
+                                                ></div>
+                                                <span className="member-name">
+                                                    {
+                                                        store.users[member]
+                                                            .display_name
+                                                    }
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                            )}
+                            {showAllAdmins && (
+                                <div className="show_all-members">
+                                    <span
+                                        className="x-symbol"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowAllAdmins(false);
+                                        }}
+                                    >
+                                        ✗
+                                    </span>
+                                    <div className="container">
+                                        <span className="title-members">
+                                            Admins
+                                        </span>
+                                        {store.chats[
+                                            currentChat?.id
+                                        ].admins.map((member, index) => {
                                             return (
                                                 <div
                                                     className="member"
@@ -816,279 +1053,299 @@ function ChatInfo({ data }) {
                                                     </div>
                                                 </div>
                                             );
-                                        }
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-                {currentChat &&
-                    store.photos[currentChat?.id] &&
-                    Object.keys(store.photos[currentChat?.id]).length > 0 &&
-                    store.photos[currentChat.id][
-                        Object.keys(store.photos[currentChat.id])[0]
-                    ].chat_id == currentChat.id && (
-                        <div className="media-wrapper">
-                            <div className="media-title">
-                                <div>
-                                    <div className="image"></div>
-                                    <span>
-                                        MEDIA (
-                                        {
-                                            Object.keys(
-                                                store.photos[currentChat?.id]
-                                            ).length
-                                        }
-                                        )
-                                    </span>
-                                </div>
-                                <span>Show All</span>
-                            </div>
-
-                            <div className="medias">
-                                {Object.entries(store.photos[currentChat.id])
-                                    .reverse()
-                                    .map(([id, photo], index) => {
-                                        if (index < 5) {
-                                            return (
-                                                <div
-                                                    key={id}
-                                                    style={{
-                                                        backgroundImage: `url(${photo.photo_url})`,
-                                                    }}
-                                                ></div>
-                                            );
-                                        } else if (index == 5) {
-                                            return (
-                                                <div
-                                                    key={id}
-                                                    style={{
-                                                        backgroundImage: `url(${photo.photo_url})`,
-                                                    }}
-                                                >
-                                                    {Object.keys(
-                                                        store.photos[
-                                                            currentChat?.id
-                                                        ]
-                                                    ).length > 6 && (
-                                                        <div className="overlay">
-                                                            <span>
-                                                                +
-                                                                {Object.keys(
-                                                                    store
-                                                                        .photos[
-                                                                        currentChat
-                                                                            ?.id
-                                                                    ]
-                                                                ).length - 6}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        }
-                                    })}
-                            </div>
-                        </div>
-                    )}
-                <div className="chat-settings">
-                    <div className="settings-title">
-                        <div className="setting-icon"></div>
-                        <span>Settings</span>
-                    </div>
-                    <div className="settings">
-                        <input
-                            type="file"
-                            id="background"
-                            name="background"
-                            style={{ display: "none" }}
-                            accept="image/png, image/jpeg"
-                            onChange={hanleSetBackground}
-                        />
-                        <label htmlFor="background" id="background">
-                            <span>Set background</span>
-                        </label>
-                        <span onClick={handleSetDefaultBackground}>
-                            Set default background
-                        </span>
-                        <input
-                            type="file"
-                            id="avatar"
-                            name="avatar"
-                            style={{ display: "none" }}
-                            accept="image/png, image/jpeg"
-                            onChange={(e) => hanleSetBackground(e, true)}
-                        />
-                        {currentChat && currentChat.is_group && (
-                            <label htmlFor="avatar" id="avatar">
-                                <span>Set avatar group</span>
-                            </label>
-                        )}
-                        {currentChat?.is_group && (
-                            <span
-                                onClick={(e) => {
-                                    setInputName(name);
-                                    setGroupNameToggle((pre) => !pre);
-                                }}
-                            >
-                                Set group name
-                                {groupNameToggle && (
-                                    <input
-                                        onKeyDown={hanleSetName}
-                                        onClick={(e) => e.stopPropagation()}
-                                        value={inputName}
-                                        onChange={(e) =>
-                                            setInputName(e.target.value)
-                                        }
-                                    />
-                                )}
-                            </span>
-                        )}
-                        {currentChat?.is_group && (
-                            <span onClick={() => setSearchUserToggle(true)}>
-                                Add member
-                                {searchUserToggle && (
-                                    <div className="add_member-wrapper">
-                                        <input
-                                            placeholder="Search friend..."
-                                            onKeyDown={hanldeSearchUser}
-                                            onClick={(e) => e.stopPropagation()}
-                                            value={inputSearchUser}
-                                            onChange={(e) =>
-                                                setInputSearchUser(
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                        <span
-                                            className="x-symbol"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSearchUserToggle(false);
-                                            }}
-                                        >
-                                            ✗
-                                        </span>
-                                        {searched && (
-                                            <div className={"friends add-user"}>
-                                                {(friends?.length > 0 &&
-                                                    friends.map((friend) => {
-                                                        return (
-                                                            <div
-                                                                className="friend"
-                                                                key={
-                                                                    friend.user_id
-                                                                }
-                                                                onClick={() => {
-                                                                    handleAddAndRemove(
-                                                                        friend.user_id
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <div
-                                                                    className="avatar"
-                                                                    style={{
-                                                                        backgroundImage: `url(${friend.avatar_url})`,
-                                                                    }}
-                                                                ></div>
-                                                                <span
-                                                                    className={
-                                                                        "friend_name add-icon"
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        friend.display_name
-                                                                    }
-                                                                </span>
-                                                                <img
-                                                                    className="group-icon"
-                                                                    src={
-                                                                        (usersAdded.includes(
-                                                                            friend.user_id
-                                                                        ) &&
-                                                                            RemoveUser) ||
-                                                                        AddUser
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        );
-                                                    })) || (
-                                                    <span className="not-found">
-                                                        User not found!
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {searched && friends?.length > 0 && (
-                                            <div className="add-action">
-                                                <button
-                                                    onClick={() =>
-                                                        setUserAdded([])
-                                                    }
-                                                >
-                                                    Clear
-                                                </button>
-                                                <button
-                                                    onClick={handleAddMembers}
-                                                >
-                                                    Add members
-                                                </button>
-                                            </div>
-                                        )}
+                                        })}
                                     </div>
-                                )}
-                            </span>
-                        )}
-                        {currentChat &&
-                            currentChat.is_group &&
-                            currentChat.admins.includes(
-                                currentUser?.user_id
-                            ) && (
-                                <span onClick={handleDeleteChat}>
-                                    Add admin
-                                </span>
+                                </div>
                             )}
-                        {currentChat && !currentChat.is_group && (
-                            <span onClick={() => handleDeleteChat(currentChat)}>
-                                Delete chat
-                            </span>
-                        )}
-                    </div>
-                    {currentChat && currentChat.is_group && (
-                        <div className="leave-wrapper">
-                            <button className="leave-btn">Leave group</button>
                         </div>
                     )}
                     {currentChat &&
-                        currentChat.is_group &&
-                        currentChat.admins.includes(currentUser?.user_id) && (
-                            <div className="leave-wrapper">
-                                <button
+                        store.photos[currentChat?.id] &&
+                        Object.keys(store.photos[currentChat?.id]).length > 0 &&
+                        store.photos[currentChat.id][
+                            Object.keys(store.photos[currentChat.id])[0]
+                        ].chat_id == currentChat.id && (
+                            <div className="media-wrapper">
+                                <div className="media-title">
+                                    <div>
+                                        <div className="image"></div>
+                                        <span>
+                                            MEDIA (
+                                            {
+                                                Object.keys(
+                                                    store.photos[
+                                                        currentChat?.id
+                                                    ]
+                                                ).length
+                                            }
+                                            )
+                                        </span>
+                                    </div>
+                                    <span>Show All</span>
+                                </div>
+
+                                <div className="medias">
+                                    {Object.entries(
+                                        store.photos[currentChat.id]
+                                    )
+                                        .reverse()
+                                        .map(([id, photo], index) => {
+                                            if (index < 5) {
+                                                return (
+                                                    <div
+                                                        key={id}
+                                                        style={{
+                                                            backgroundImage: `url(${photo.photo_url})`,
+                                                        }}
+                                                    ></div>
+                                                );
+                                            } else if (index == 5) {
+                                                return (
+                                                    <div
+                                                        key={id}
+                                                        style={{
+                                                            backgroundImage: `url(${photo.photo_url})`,
+                                                        }}
+                                                    >
+                                                        {Object.keys(
+                                                            store.photos[
+                                                                currentChat?.id
+                                                            ]
+                                                        ).length > 6 && (
+                                                            <div className="overlay">
+                                                                <span>
+                                                                    +
+                                                                    {Object.keys(
+                                                                        store
+                                                                            .photos[
+                                                                            currentChat
+                                                                                ?.id
+                                                                        ]
+                                                                    ).length -
+                                                                        6}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+                                        })}
+                                </div>
+                            </div>
+                        )}
+                    <div className="chat-settings">
+                        <div className="settings-title">
+                            <div className="setting-icon"></div>
+                            <span>Settings</span>
+                        </div>
+                        <div className="settings">
+                            <input
+                                type="file"
+                                id="background"
+                                name="background"
+                                style={{ display: "none" }}
+                                accept="image/png, image/jpeg"
+                                onChange={hanleSetBackground}
+                            />
+                            <label htmlFor="background" id="background">
+                                <span>Set background</span>
+                            </label>
+                            <span onClick={handleSetDefaultBackground}>
+                                Set default background
+                            </span>
+                            <input
+                                type="file"
+                                id="avatar"
+                                name="avatar"
+                                style={{ display: "none" }}
+                                accept="image/png, image/jpeg"
+                                onChange={(e) => hanleSetBackground(e, true)}
+                            />
+                            {currentChat && currentChat.is_group && (
+                                <label htmlFor="avatar" id="avatar">
+                                    <span>Set avatar group</span>
+                                </label>
+                            )}
+                            {currentChat?.is_group && (
+                                <span
+                                    onClick={(e) => {
+                                        setInputName(name);
+                                        setGroupNameToggle((pre) => !pre);
+                                    }}
+                                >
+                                    Set group name
+                                    {groupNameToggle && (
+                                        <input
+                                            onKeyDown={hanleSetName}
+                                            onClick={(e) => e.stopPropagation()}
+                                            value={inputName}
+                                            onChange={(e) =>
+                                                setInputName(e.target.value)
+                                            }
+                                        />
+                                    )}
+                                </span>
+                            )}
+                            {currentChat?.is_group && (
+                                <span onClick={() => setSearchUserToggle(true)}>
+                                    Add member
+                                    {searchUserToggle && (
+                                        <div className="add_member-wrapper">
+                                            <input
+                                                placeholder="Search friend..."
+                                                onKeyDown={hanldeSearchUser}
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                                value={inputSearchUser}
+                                                onChange={(e) =>
+                                                    setInputSearchUser(
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                            <span
+                                                className="x-symbol"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSearchUserToggle(false);
+                                                }}
+                                            >
+                                                ✗
+                                            </span>
+                                            {searched && (
+                                                <div
+                                                    className={
+                                                        "friends add-user"
+                                                    }
+                                                >
+                                                    {(friends?.length > 0 &&
+                                                        friends.map(
+                                                            (friend) => {
+                                                                return (
+                                                                    <div
+                                                                        className="friend"
+                                                                        key={
+                                                                            friend.user_id
+                                                                        }
+                                                                        onClick={() => {
+                                                                            handleAddAndRemove(
+                                                                                friend.user_id
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        <div
+                                                                            className="avatar"
+                                                                            style={{
+                                                                                backgroundImage: `url(${friend.avatar_url})`,
+                                                                            }}
+                                                                        ></div>
+                                                                        <span
+                                                                            className={
+                                                                                "friend_name add-icon"
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                friend.display_name
+                                                                            }
+                                                                        </span>
+                                                                        <img
+                                                                            className="group-icon"
+                                                                            src={
+                                                                                (usersAdded.includes(
+                                                                                    friend.user_id
+                                                                                ) &&
+                                                                                    RemoveUser) ||
+                                                                                AddUser
+                                                                            }
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )) || (
+                                                        <span className="not-found">
+                                                            User not found!
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {searched &&
+                                                friends?.length > 0 && (
+                                                    <div className="add-action">
+                                                        <button
+                                                            onClick={() =>
+                                                                setUserAdded([])
+                                                            }
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                        <button
+                                                            onClick={
+                                                                handleAddMembers
+                                                            }
+                                                        >
+                                                            Add members
+                                                        </button>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    )}
+                                </span>
+                            )}
+                            {currentChat && !currentChat.is_group && (
+                                <span
                                     onClick={() =>
                                         handleDeleteChat(currentChat)
                                     }
+                                >
+                                    Delete chat
+                                </span>
+                            )}
+                        </div>
+                        {currentChat && currentChat.is_group && (
+                            <div className="leave-wrapper">
+                                <button
+                                    onClick={() => {
+                                        handleLeaveGroup(currentChat);
+                                    }}
                                     className="leave-btn"
                                 >
-                                    Delete group
+                                    Leave group
                                 </button>
                             </div>
                         )}
+                        {currentChat &&
+                            currentChat.is_group &&
+                            store.chats[currentChat.id].admins.includes(
+                                currentUser?.user_id
+                            ) && (
+                                <div className="leave-wrapper">
+                                    <button
+                                        onClick={() =>
+                                            handleDeleteChat(currentChat)
+                                        }
+                                        className="leave-btn"
+                                    >
+                                        Delete group
+                                    </button>
+                                </div>
+                            )}
+                    </div>
                 </div>
+                {loading && (
+                    <div className="loading-wrapper">
+                        <img src={Loading} />
+                    </div>
+                )}
+                {loadingError && (
+                    <div className="loading-wrapper">
+                        <img src={catLoading} />
+                        <h3>Something went wrong! Please try again.</h3>
+                    </div>
+                )}
             </div>
-            {loading && (
-                <div className="loading-wrapper">
-                    <img src={Loading} />
-                </div>
-            )}
-            {loadingError && (
-                <div className="loading-wrapper">
-                    <img src={catLoading} />
-                    <h3>Something went wrong! Please try again.</h3>
-                </div>
-            )}
-        </div>
+        )
     );
 }
 

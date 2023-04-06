@@ -75,7 +75,6 @@ function Chats({ toast }) {
                     .reverse()
                     .map(([time, id]) => {
                         const data = store.chats[id];
-
                         if (!data.members.includes(currentUser?.user_id))
                             return;
                         let avatar = data.chat_avatar;

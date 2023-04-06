@@ -31,7 +31,7 @@ messageRouter.post("/:chat_id/add_message", async (req, res) => {
         res.status(200).json({
             code: 200,
             status: "success",
-            elements: message,
+            elements: { message, chat: add_room },
         });
     } catch (e) {
         return handleError(e, res);

@@ -10,6 +10,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebase/firebase";
 import { v4 as uuidv4 } from "uuid";
 import { socket } from "../socket/socket";
+import EmojiPicker from "emoji-picker-react";
 
 function Input({ data }) {
     const [text, setText] = useState("");
@@ -30,27 +31,16 @@ function Input({ data }) {
                 if (data.status == "success") {
                     dispatch({
                         type: "ADD_MESSAGE",
-                        message: data.elements.message,
+                        message: data.elements.message.message,
                     });
                     dispatch({
                         type: "ADD_CHATS",
-                        chats: {
-                            [data.elements.message.chat_id]: {
-                                ...store.chats[data.elements.message.chat_id],
-                                updated_at: data.elements.message.created_at,
-                                last_message: data.elements.message.id,
-                            },
-                        },
+                        chats: { [data.elements.chat.id]: data.elements.chat },
                     });
-                    setCurrentChat((pre) => {
-                        return {
-                            ...pre,
-                            updated_at: data.elements.message.created_at,
-                            last_message: data.elements.message.id,
-                        };
-                    });
+                    setCurrentChat(data.elements.chat);
                     socket.emit("message", {
-                        message: data.elements.message,
+                        message: data.elements.message.message,
+                        chat: data.elements.chat,
                     });
                 } else {
                     return toast("Something went wrong! Please try again.");
@@ -68,33 +58,19 @@ function Input({ data }) {
                             if (data.status == "success") {
                                 dispatch({
                                     type: "ADD_MESSAGE",
-                                    message: data.elements.message,
+                                    message: data.elements.message.message,
                                 });
                                 dispatch({
                                     type: "ADD_CHATS",
                                     chats: {
-                                        [data.elements.message.chat_id]: {
-                                            ...store.chats[
-                                                data.elements.message.chat_id
-                                            ],
-                                            updated_at:
-                                                data.elements.message
-                                                    .created_at,
-                                            last_message:
-                                                data.elements.message.id,
-                                        },
+                                        [data.elements.chat.id]:
+                                            data.elements.chat,
                                     },
                                 });
-                                setCurrentChat((pre) => {
-                                    return {
-                                        ...pre,
-                                        updated_at:
-                                            data.elements.message.created_at,
-                                        last_message: data.elements.message.id,
-                                    };
-                                });
+                                setCurrentChat(data.elements.chat);
                                 socket.emit("message", {
-                                    message: data.elements.message,
+                                    message: data.elements.message.message,
+                                    chat: data.elements.chat,
                                 });
                             } else {
                                 return toast(
@@ -142,33 +118,23 @@ function Input({ data }) {
                     dispatch({
                         type: "ADD_MESSAGE_DONE",
                         id,
-                        message: data.elements.message,
+                        message: data.elements.message.message,
                     });
                     dispatch({
                         type: "ADD_CHATS",
                         chats: {
-                            [currentChat.id]: {
-                                ...currentChat,
-                                updated_at: data.elements.message.created_at,
-                                last_message: data.elements.message.id,
-                            },
+                            [data.elements.chat.id]: data.elements.chat,
                         },
                     });
                     dispatch({
                         type: "ADD_PHOTO",
-                        photo: data.elements.photo,
+                        photo: data.elements.message.photo,
                     });
                     socket.emit("message", {
-                        message: data.elements.message,
-                        photo: data.elements.photo,
+                        message: data.elements.message.message,
+                        photo: data.elements.message.photo,
                     });
-                    setCurrentChat((pre) => {
-                        return {
-                            ...pre,
-                            updated_at: data.elements.message.created_at,
-                            last_message: data.elements.message.id,
-                        };
-                    });
+                    setCurrentChat(data.elements.chat);
                 } else {
                     dispatch({
                         type: "REMOVE_MESSAGE_FAILURE",
@@ -194,37 +160,24 @@ function Input({ data }) {
                                 dispatch({
                                     type: "ADD_MESSAGE_DONE",
                                     id,
-                                    message: data.elements.message,
-                                });
-                                dispatch({
-                                    type: "ADD_PHOTO",
-                                    photo: data.elements.photo,
+                                    message: data.elements.message.message,
                                 });
                                 dispatch({
                                     type: "ADD_CHATS",
                                     chats: {
-                                        [currentChat.id]: {
-                                            ...currentChat,
-                                            updated_at:
-                                                data.elements.message
-                                                    .created_at,
-                                            last_message:
-                                                data.elements.message.id,
-                                        },
+                                        [data.elements.chat.id]:
+                                            data.elements.chat,
                                     },
                                 });
+                                dispatch({
+                                    type: "ADD_PHOTO",
+                                    photo: data.elements.message.photo,
+                                });
                                 socket.emit("message", {
-                                    message: data.elements.message,
-                                    photo: data.elements.photo,
+                                    message: data.elements.message.message,
+                                    photo: data.elements.message.photo,
                                 });
-                                setCurrentChat((pre) => {
-                                    return {
-                                        ...pre,
-                                        updated_at:
-                                            data.elements.message.created_at,
-                                        last_message: data.elements.message.id,
-                                    };
-                                });
+                                setCurrentChat(data.elements.chat);
                             } else {
                                 dispatch({
                                     type: "REMOVE_MESSAGE_FAILURE",
@@ -287,15 +240,32 @@ function Input({ data }) {
 
     return (
         <div className="input-container">
-            <div className="input-wrapper">
+            <div className="input-wrapper" onClick={() => setEmoji(false)}>
                 <img
                     className="emoji"
                     src={Emoji}
-                    onClick={() => setEmoji((pre) => !pre)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setEmoji((pre) => !pre);
+                    }}
                 />
                 {emoji && (
-                    <div className="emoji-picker">
-                        <span>update later</span>
+                    <div
+                        className="emoji-picker"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                        }}
+                    >
+                        <EmojiPicker
+                            emojiStyle="native"
+                            searchDisabled={true}
+                            previewConfig={{ showPreview: false }}
+                            onEmojiClick={(e) =>
+                                setText((input) => input + e.emoji)
+                            }
+                            height={"auto"}
+                            width="auto"
+                        />
                     </div>
                 )}
                 <input

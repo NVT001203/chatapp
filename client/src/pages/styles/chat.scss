@@ -86,7 +86,7 @@
                     flex-wrap: wrap;
                     height: auto;
                     width: auto;
-                    gap: 10px;
+                    // gap: 10px;
                     .avatar {
                         width: 36px;
                         height: 36px;
@@ -103,6 +103,7 @@
                             }
                         }
                         margin-top: 10px;
+                        margin-left: 10px;
                         display: block;
                         font-size: 14px;
                         padding: 10px;
@@ -120,29 +121,45 @@
                                 display: flex;
                             }
                         }
+                        margin-left: 10px;
                         max-width: 300px;
                         max-height: 300px;
                         position: relative;
                     }
+                    .bridge {
+                        width: 8px;
+                        height: 100%;
+                        &:hover {
+                            & ~ .message-actions {
+                                display: flex;
+                            }
+                        }
+                    }
                     .message-actions {
                         display: none;
-                        margin-top: 10px;
-                        padding: 0px 10px;
+                        &:hover {
+                            display: flex;
+                        }
+                        border-radius: 18px;
+                        padding: 2px 6px;
+                        background-color: rgb(33, 114, 68, 0.5);
+                        margin-top: 8px;
                         gap: 4px;
                         width: auto;
-                        height: auto;
+                        height: 38px;
                         .action-icon {
                             width: 34px;
                             height: 34px;
                             border-radius: 50%;
                             border: 8px solid rgba(0, 0, 0, 0.4);
                             filter: grayscale(50%);
+                            filter: invert(100%);
                             cursor: pointer;
                         }
                         .more {
                             width: 34px;
                             height: 34px;
-                            background-color: #ffcbb3;
+                            background-color: rgb(33, 114, 68, 0.8);
                             padding: 2px;
                         }
                     }
@@ -151,10 +168,15 @@
                     align-self: flex-end;
                     flex-direction: row-reverse;
                     .message-text {
+                        margin: 0 10px 0 0;
                         border-top-right-radius: 0;
                         border-top-left-radius: 10px;
                     }
+                    .message-image {
+                        margin: 0 10px 0 0;
+                    }
                     .message-actions {
+                        margin-top: -2px;
                         flex-direction: row-reverse;
                     }
                 }
@@ -238,8 +260,12 @@
                 }
                 .emoji-picker {
                     position: absolute;
-                    height: auto;
+                    height: 400px;
+                    overflow-y: scroll;
                     bottom: calc(100% + 16px);
+                    &::-webkit-scrollbar {
+                        display: none;
+                    }
                 }
             }
         }

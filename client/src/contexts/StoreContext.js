@@ -57,17 +57,17 @@ const photos = {
     // }
 };
 
-const initialStore = {
+let initialStore = {
     chats,
     messages,
     users,
     photos,
 };
 
-const reducer = (state, action) => {
+const reducer = (state = initialStore, action) => {
     switch (action.type) {
         case "ADD_MESSAGE": {
-            return {
+            return (initialStore = {
                 ...state,
                 messages: {
                     ...state.messages,
@@ -80,10 +80,10 @@ const reducer = (state, action) => {
                           }
                         : { [action.message.id]: action.message },
                 },
-            };
+            });
         }
         case "RECALL_MESSAGE": {
-            return {
+            return (initialStore = {
                 ...state,
                 messages: {
                     ...state.messages,
@@ -95,31 +95,31 @@ const reducer = (state, action) => {
                         recall: true,
                     },
                 },
-            };
+            });
         }
         case "ADD_USERS": {
-            return {
+            return (initialStore = {
                 ...state,
                 users: { ...state.users, ...action.users },
-            };
+            });
         }
         case "REMOVE_USER": {
             delete state.users[action.user_id];
-            return state;
+            return (initialStore = state);
         }
         case "ADD_CHATS": {
-            return {
+            return (initialStore = {
                 ...state,
                 chats: { ...state.chats, ...action.chats },
-            };
+            });
         }
         case "REMOVE_CHAT": {
             delete state.chats[action.chat_id];
-            return state;
+            return (initialStore = state);
         }
         case "LEAVE_GROUP": {
             delete state.chats[action.chat_id];
-            return state;
+            return (initialStore = state);
         }
         case "ADD_MESSAGES": {
             let messages = state.messages;
@@ -135,13 +135,13 @@ const reducer = (state, action) => {
                 };
             }
 
-            return {
+            return (initialStore = {
                 ...state,
                 messages,
-            };
+            });
         }
         case "ADD_PHOTO": {
-            return {
+            return (initialStore = {
                 ...state,
                 photos: {
                     ...state.photos,
@@ -152,7 +152,7 @@ const reducer = (state, action) => {
                           }
                         : { [action.photo.id]: action.photo },
                 },
-            };
+            });
         }
         case "ADD_PHOTOS": {
             let photos = state.photos;
@@ -167,14 +167,14 @@ const reducer = (state, action) => {
                         : { [photo.id]: photo },
                 };
             }
-            return {
+            return (initialStore = {
                 ...state,
                 photos,
-            };
+            });
         }
         case "ADD_MESSAGE_DONE": {
             delete state.messages[action.message.chat_id][action.id];
-            return {
+            return (initialStore = {
                 ...state,
                 messages: {
                     ...state.messages,
@@ -183,14 +183,14 @@ const reducer = (state, action) => {
                         [action.message.id]: action.message,
                     },
                 },
-            };
+            });
         }
         case "REMOVE_MESSAGE_FAILURE": {
             delete state.messages[action.message.chat_id][action.id];
-            return state;
+            return (initialStore = state);
         }
         default:
-            return state;
+            return (initialStore = state);
     }
 };
 
@@ -206,123 +206,137 @@ export const StoreContext = createContext();
 
 export const StoreContextProvider = ({ children }) => {
     const [store, dispatch] = useReducer(reducer, initialStore);
-    const { currentUser } = useContext(AuthContext);
-
-    const [updatedCurrentChat, setUpdatedCurrentChat] = useState({
-        chat:
-            Object.keys(store.chats).length == 0
-                ? undefined
-                : store.chats[sortChats(store.chats).reverse()[0][1]],
-    });
-    useEffect(() => {
-        const onSocket = () => {
-            socket.emit("join-chats", { chats: Object.keys(store.chats) });
-            socket.on("message-receive", ({ message }) => {
-                dispatch({
-                    type: "ADD_MESSAGE",
-                    message: message,
-                });
-                dispatch({
-                    type: "ADD_CHATS",
-                    chats: {
-                        [message.chat_id]: {
-                            ...store.chats[message.chat_id],
-                            updated_at: message.created_at,
-                            last_message: message.id,
-                        },
-                    },
-                });
-            });
-            socket.on("photo-receive", ({ photo }) => {
-                dispatch({
-                    type: "ADD_PHOTO",
-                    photo,
-                });
-            });
-            socket.on("added-chat", ({ chat, notices, members }) => {
-                console.log({ chat, notices, members });
-                dispatch({
-                    type: "ADD_USERS",
-                    users: members,
-                });
-                dispatch({
-                    type: "ADD_CHATS",
-                    chats: {
-                        [chat.id]: chat,
-                    },
-                });
-                dispatch({
-                    type: "ADD_MESSAGES",
-                    messages: notices,
-                });
-            });
-            socket.on("removed-member", ({ member, chat, notice }) => {
-                console.log({
-                    member,
-                    user_id: currentUser.user_id,
-                });
-                if (member == currentUser.user_id) {
-                    dispatch({
-                        type: "LEAVE_GROUP",
-                        chat_id: chat.id,
-                        user_id: member,
-                    });
-                    setUpdatedCurrentChat((pre) => {
-                        return {
-                            chat:
-                                Object.keys(store.chats).length == 0
-                                    ? undefined
-                                    : store.chats[
-                                          sortChats(store.chats).reverse()[0][1]
-                                      ],
-                        };
-                    });
-                } else {
-                    dispatch({
-                        type: "ADD_CHATS",
-                        chats: { [chat.id]: chat },
-                    });
-                    dispatch({
-                        type: "ADD_MESSAGES",
-                        messages: notice,
-                    });
-                }
-            });
-            socket.on("updated-chat", ({ chat }) => {
-                dispatch({
-                    type: "ADD_CHATS",
-                    chats: {
-                        [chat.id]: chat,
-                    },
-                });
-                setUpdatedCurrentChat((pre) => ({
-                    chat,
-                    updated: !pre.updated,
-                }));
-            });
-            socket.on("deleted-chat", ({ chat }) => {
-                dispatch({
-                    type: "REMOVE_CHAT",
-                    chat_id: chat.id,
-                });
-                setUpdatedCurrentChat((pre) => {
-                    return {
-                        chat:
-                            Object.keys(store.chats).length == 0
-                                ? undefined
-                                : store.chats[
-                                      sortChats(store.chats).reverse()[0][1]
-                                  ],
-                    };
-                });
-            });
-        };
-
-        Object.keys(currentUser).length > 0 &&
-            store.chats &&
-            socket.connected &&
-            onSocket();
-    }, [currentUser, Object.keys(store.chats).length, socket.id]);
+    // const { currentUser, currentSocket } = useContext(AuthContext);
+    // const [updatedCurrentChat, setUpdatedCurrentChat] = useState({
+    //     chat:
+    //         Object.keys(store.chats).length == 0
+    //             ? undefined
+    //             : store.chats[sortChats(store.chats).reverse()[0][1]],
+    // });
+    // useEffect(() => {
+    //     const onSocket = () => {
+    //         socket.emit("join-chats", { chats: Object.keys(store.chats) });
+    //         socket.on("message-receive", ({ message }) => {
+    //             console.log(message);
+    //             dispatch({
+    //                 type: "ADD_MESSAGE",
+    //                 message: message,
+    //             });
+    //             dispatch({
+    //                 type: "ADD_CHATS",
+    //                 chats: {
+    //                     [message.chat_id]: {
+    //                         ...store.chats[message.chat_id],
+    //                         updated_at: message.created_at,
+    //                         last_message: message.id,
+    //                     },
+    //                 },
+    //             });
+    //         });
+    //         socket.on("photo-receive", ({ photo }) => {
+    //             dispatch({
+    //                 type: "ADD_PHOTO",
+    //                 photo,
+    //             });
+    //         });
+    //         socket.on("added-chat", ({ chat, notices, members }) => {
+    //             dispatch({
+    //                 type: "ADD_USERS",
+    //                 users: members,
+    //             });
+    //             console.log({
+    //                 data: {
+    //                     type: "ADD_CHATS",
+    //                     chats: {
+    //                         [chat.id]: chat,
+    //                     },
+    //                 },
+    //             });
+    //             dispatch({
+    //                 type: "ADD_CHATS",
+    //                 chats: {
+    //                     [chat.id]: chat,
+    //                 },
+    //             });
+    //             dispatch({
+    //                 type: "ADD_MESSAGES",
+    //                 messages: notices,
+    //             });
+    //         });
+    //         socket.on("removed-member", ({ member, chat, notice }) => {
+    //             console.log({ member, chat, notice });
+    //             console.log("time");
+    //             if (member == currentUser.user_id) {
+    //                 console.log(store);
+    //                 dispatch({
+    //                     type: "LEAVE_GROUP",
+    //                     chat_id: chat.id,
+    //                     user_id: member,
+    //                 });
+    //                 setUpdatedCurrentChat((pre) => {
+    //                     console.log({
+    //                         chat:
+    //                             Object.keys(store.chats).length == 0
+    //                                 ? undefined
+    //                                 : store.chats[
+    //                                       sortChats(store.chats).reverse()[0][1]
+    //                                   ],
+    //                     });
+    //                     return {
+    //                         chat:
+    //                             Object.keys(store.chats).length == 0
+    //                                 ? undefined
+    //                                 : store.chats[
+    //                                       sortChats(store.chats).reverse()[0][1]
+    //                                   ],
+    //                     };
+    //                 });
+    //             } else {
+    //                 dispatch({
+    //                     type: "ADD_CHATS",
+    //                     chats: { [chat.id]: chat },
+    //                 });
+    //                 dispatch({
+    //                     type: "ADD_MESSAGES",
+    //                     messages: notice,
+    //                 });
+    //             }
+    //         });
+    //         socket.on("updated-chat", ({ chat }) => {
+    //             dispatch({
+    //                 type: "ADD_CHATS",
+    //                 chats: {
+    //                     [chat.id]: chat,
+    //                 },
+    //             });
+    //             setUpdatedCurrentChat((pre) => ({
+    //                 chat,
+    //                 updated: !pre.updated,
+    //             }));
+    //         });
+    //         socket.on("deleted-chat", ({ chat }) => {
+    //             dispatch({
+    //                 type: "REMOVE_CHAT",
+    //                 chat_id: chat.id,
+    //             });
+    //             setUpdatedCurrentChat((pre) => {
+    //                 return {
+    //                     chat:
+    //                         Object.keys(store.chats).length == 0
+    //                             ? undefined
+    //                             : store.chats[
+    //                                   sortChats(store.chats).reverse()[0][1]
+    //                               ],
+    //                 };
+    //             });
+    //         });
+    //     };
+    //     store.chats && socket.connected && onSocket();
+    //     return () => {
+    //         console.log("off");
+    //         socket.offAny();
+    //     };
+    // }, [currentUser, currentSocket]);
 
     // useEffect(() => {
     //     console.log(store);
@@ -333,8 +347,8 @@ export const StoreContextProvider = ({ children }) => {
                 store,
                 dispatch,
                 sortChats,
-                setUpdatedCurrentChat,
-                updatedCurrentChat,
+                // setUpdatedCurrentChat,
+                // updatedCurrentChat,
             }}
         >
             {children}

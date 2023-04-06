@@ -22,8 +22,10 @@ function Messages({ data }) {
     return (
         <div
             style={
-                (currentChat.background_image && {
-                    backgroundImage: `url(${currentChat.background_image})`,
+                (store.chats[currentChat.id].background_image && {
+                    backgroundImage: `url(${
+                        store.chats[currentChat.id].background_image
+                    })`,
                     backgroundPosition: "center",
                     backgroundSize: "cover",
                     backgroundRepeat: "no-repeat",
@@ -33,7 +35,9 @@ function Messages({ data }) {
         >
             <div className="messages">
                 {store.messages[currentChat.id] &&
-                    currentChat.members.includes(currentUser.user_id) &&
+                    store.chats[currentChat.id].members.includes(
+                        currentUser.user_id
+                    ) &&
                     sortMessages(store.messages[currentChat.id]).map(
                         ([created_at, key]) => {
                             if (store.messages[currentChat.id][key].notice) {
@@ -75,6 +79,22 @@ function Messages({ data }) {
                                                     ][key].sender
                                                 ].display_name +
                                                     " created a chat"}{" "}
+                                                {created_at}
+                                            </span>
+                                        </div>
+                                    );
+                                } else if (!text_arr[1]) {
+                                    return (
+                                        <div
+                                            key={key}
+                                            className="notice-wrapper"
+                                        >
+                                            <span className="notice">
+                                                {
+                                                    store.messages[
+                                                        currentChat.id
+                                                    ][key].text
+                                                }{" "}
                                                 {created_at}
                                             </span>
                                         </div>
@@ -155,6 +175,7 @@ function Messages({ data }) {
                                             src={ImageLoading}
                                         />
                                     )}
+                                    {/* <div className="bridge"></div>
                                     <div className="message-actions">
                                         <img
                                             className="action-icon"
@@ -164,7 +185,7 @@ function Messages({ data }) {
                                             className="action-icon more"
                                             src={More}
                                         />
-                                    </div>
+                                    </div> */}
                                 </div>
                             );
                         }
