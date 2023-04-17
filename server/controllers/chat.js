@@ -11,7 +11,7 @@ export const createChat = async (db, { user_id, friend_id }) => {
             last_message uuid, 
             background_image varchar,
             updated_at timestamp  
-        )
+        ); 
     `);
     const new_chat = await db.query(`
         insert into chats(members, updated_at)

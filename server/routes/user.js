@@ -1,8 +1,8 @@
 import { client } from "../db/db.config.js";
 import { Router } from "express";
 import {
-    addChat,
     displayChat,
+    getAllFriends,
     getPublicInfo,
     getUsers,
     hiddenChat,
@@ -225,7 +225,6 @@ userRouter.get("/:id/get_resource", async (req, res) => {
             elements: { chats, messages, users },
         });
     } catch (e) {
-        console.log(e);
         handleError(e, res);
     }
 });
@@ -268,6 +267,27 @@ userRouter.delete("/:id/sign_out", async (req, res) => {
             res.status(200).json({
                 code: 200,
                 status: "success",
+            });
+        }
+    } catch (e) {
+        res.status(500).json({
+            code: 500,
+            status: "error",
+            message: "Server error!",
+        });
+    }
+});
+
+userRouter.get("/:id/get_friends", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { user_id } = req.user;
+        if (id == user_id) {
+            const friends = await getAllFriends(client, { user_id });
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                elements: { friends },
             });
         }
     } catch (e) {

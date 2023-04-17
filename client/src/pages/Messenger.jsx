@@ -273,7 +273,7 @@ function Messenger() {
                     className="messenger-container"
                     style={{ position: "relative" }}
                 >
-                    <Navigate toast={toast} />
+                    <Navigate data={{ toast, store, dispatch }} />
                     <Sidebar toast={toast} />
                     <Chat data={{ toast, hidden, setHidden }} />
                     <ChatInfo

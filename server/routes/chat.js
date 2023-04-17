@@ -155,20 +155,6 @@ chatRouter.put("/add_admins/:chat_id", async (req, res) => {
     }
 });
 
-// chatRouter.get("/get_AdminList", async (req, res) => {
-//     try {
-//         const { chat_id } = req.body;
-//         const admins = await getAdmins(client, { chat_id });
-//         res.status(200).json({
-//             code: 200,
-//             status: "success",
-//             elements: admins,
-//         });
-//     } catch (e) {
-//         return handleError(e, res);
-//     }
-// });
-
 chatRouter.put("/remove_member/:chat_id", async (req, res) => {
     try {
         const chat_id = req.params.chat_id;

@@ -12,7 +12,7 @@ export const createMessage = async (
             file_url varchar,
             recall boolean default false,
             created_at timestamp);
-        create index if not exists idx_chat_id
+        create index if not exists idxMessage_chat_id
         on messages(chat_id);
     `);
     await db.query(`
@@ -22,7 +22,7 @@ export const createMessage = async (
             photo_url varchar not null, 
             created_at timestamp default current_timestamp
         );
-        create index if not exists idx_chat_id
+        create index if not exists idxPhotos_chat_id
         on photos(chat_id);
     `);
     const new_message = await db.query(
@@ -91,11 +91,6 @@ export const getLastMessages = async (db, { messages_id }) => {
 
 export const getLastNotices = async (db, { chats_id }) => {
     try {
-        // const messages = await db.query(`
-        //     select * from messages where id::text in
-        //     (select unnest(array['${messages_id.join(`', '`)}']));
-        // `);
-
         const notices = await db.query(`
             select * from notices 
             where chat_id::text in (select unnest(array['${chats_id.join(

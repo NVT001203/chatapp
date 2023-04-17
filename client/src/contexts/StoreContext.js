@@ -189,6 +189,24 @@ const reducer = (state = initialStore, action) => {
             delete state.messages[action.message.chat_id][action.id];
             return (initialStore = state);
         }
+        case "ADD_FRIENDS": {
+            return {
+                ...state,
+                friends: {
+                    [action.user_id]: state.friends
+                        ? {
+                              ...state.friends[action.user_id],
+                              ...action.friends,
+                          }
+                        : { ...action.friends },
+                },
+            };
+        }
+        case "REMOVE_FRIEND": {
+            let new_state = state;
+            delete new_state.friends[action.user_id][action.friend_id];
+            return new_state;
+        }
         default:
             return (initialStore = state);
     }
@@ -206,149 +224,17 @@ export const StoreContext = createContext();
 
 export const StoreContextProvider = ({ children }) => {
     const [store, dispatch] = useReducer(reducer, initialStore);
-    // const { currentUser, currentSocket } = useContext(AuthContext);
-    // const [updatedCurrentChat, setUpdatedCurrentChat] = useState({
-    //     chat:
-    //         Object.keys(store.chats).length == 0
-    //             ? undefined
-    //             : store.chats[sortChats(store.chats).reverse()[0][1]],
-    // });
-    // useEffect(() => {
-    //     const onSocket = () => {
-    //         socket.emit("join-chats", { chats: Object.keys(store.chats) });
-    //         socket.on("message-receive", ({ message }) => {
-    //             console.log(message);
-    //             dispatch({
-    //                 type: "ADD_MESSAGE",
-    //                 message: message,
-    //             });
-    //             dispatch({
-    //                 type: "ADD_CHATS",
-    //                 chats: {
-    //                     [message.chat_id]: {
-    //                         ...store.chats[message.chat_id],
-    //                         updated_at: message.created_at,
-    //                         last_message: message.id,
-    //                     },
-    //                 },
-    //             });
-    //         });
-    //         socket.on("photo-receive", ({ photo }) => {
-    //             dispatch({
-    //                 type: "ADD_PHOTO",
-    //                 photo,
-    //             });
-    //         });
-    //         socket.on("added-chat", ({ chat, notices, members }) => {
-    //             dispatch({
-    //                 type: "ADD_USERS",
-    //                 users: members,
-    //             });
-    //             console.log({
-    //                 data: {
-    //                     type: "ADD_CHATS",
-    //                     chats: {
-    //                         [chat.id]: chat,
-    //                     },
-    //                 },
-    //             });
-    //             dispatch({
-    //                 type: "ADD_CHATS",
-    //                 chats: {
-    //                     [chat.id]: chat,
-    //                 },
-    //             });
-    //             dispatch({
-    //                 type: "ADD_MESSAGES",
-    //                 messages: notices,
-    //             });
-    //         });
-    //         socket.on("removed-member", ({ member, chat, notice }) => {
-    //             console.log({ member, chat, notice });
-    //             console.log("time");
-    //             if (member == currentUser.user_id) {
-    //                 console.log(store);
-    //                 dispatch({
-    //                     type: "LEAVE_GROUP",
-    //                     chat_id: chat.id,
-    //                     user_id: member,
-    //                 });
-    //                 setUpdatedCurrentChat((pre) => {
-    //                     console.log({
-    //                         chat:
-    //                             Object.keys(store.chats).length == 0
-    //                                 ? undefined
-    //                                 : store.chats[
-    //                                       sortChats(store.chats).reverse()[0][1]
-    //                                   ],
-    //                     });
-    //                     return {
-    //                         chat:
-    //                             Object.keys(store.chats).length == 0
-    //                                 ? undefined
-    //                                 : store.chats[
-    //                                       sortChats(store.chats).reverse()[0][1]
-    //                                   ],
-    //                     };
-    //                 });
-    //             } else {
-    //                 dispatch({
-    //                     type: "ADD_CHATS",
-    //                     chats: { [chat.id]: chat },
-    //                 });
-    //                 dispatch({
-    //                     type: "ADD_MESSAGES",
-    //                     messages: notice,
-    //                 });
-    //             }
-    //         });
-    //         socket.on("updated-chat", ({ chat }) => {
-    //             dispatch({
-    //                 type: "ADD_CHATS",
-    //                 chats: {
-    //                     [chat.id]: chat,
-    //                 },
-    //             });
-    //             setUpdatedCurrentChat((pre) => ({
-    //                 chat,
-    //                 updated: !pre.updated,
-    //             }));
-    //         });
-    //         socket.on("deleted-chat", ({ chat }) => {
-    //             dispatch({
-    //                 type: "REMOVE_CHAT",
-    //                 chat_id: chat.id,
-    //             });
-    //             setUpdatedCurrentChat((pre) => {
-    //                 return {
-    //                     chat:
-    //                         Object.keys(store.chats).length == 0
-    //                             ? undefined
-    //                             : store.chats[
-    //                                   sortChats(store.chats).reverse()[0][1]
-    //                               ],
-    //                 };
-    //             });
-    //         });
-    //     };
-    //     store.chats && socket.connected && onSocket();
-    //     return () => {
-    //         console.log("off");
-    //         socket.offAny();
-    //     };
-    // }, [currentUser, currentSocket]);
 
-    // useEffect(() => {
-    //     console.log(store);
-    // }, [store]);
+    useEffect(() => {
+        console.log({ friends: store.friends, users: store.users });
+    }, [store.friends]);
+
     return (
         <StoreContext.Provider
             value={{
                 store,
                 dispatch,
                 sortChats,
-                // setUpdatedCurrentChat,
-                // updatedCurrentChat,
             }}
         >
             {children}

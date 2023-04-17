@@ -9,6 +9,10 @@ let users_online = {
     // [socket]: user_id
 };
 
+let users_friends = {
+    // [user_id]: [...friends_id]
+};
+
 export const socketConnect = (server) => {
     const io = new Server(server, {
         cors: {
@@ -92,8 +96,6 @@ export const socketConnect = (server) => {
                 ...users_online,
                 [user_id]: socket,
             };
-            const users_id = Object.keys(users_online);
-            console.log(users_id);
             console.log("user connected");
         });
         socket.on("disconnect", () => {

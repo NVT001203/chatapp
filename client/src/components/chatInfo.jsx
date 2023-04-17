@@ -55,14 +55,6 @@ function ChatInfo({ data }) {
             setName(name);
         }
         const getPhotos = async () => {
-            console.log({
-                length1: store.photos[currentChat.id],
-                length2: Object.entries(store.messages[currentChat.id]).filter(
-                    ([key, value]) => {
-                        return value.photo_url;
-                    }
-                ).length,
-            });
             try {
                 const { data } = await publicInstance.get(
                     `/message/${currentChat.id}/get_photos`
@@ -772,7 +764,6 @@ function ChatInfo({ data }) {
             }
             setLoading(false);
         } catch (err) {
-            console.log(err);
             const data = err.response.data;
             if (data.message == "jwt expired") {
                 refreshToken()

@@ -142,3 +142,68 @@ export const searchUsers = async (db, { display_name }) => {
     `);
     return friends.rows;
 };
+
+// friends table
+export const addFriend = async (db, { user_id, friend_id }) => {
+    await db.query(`
+        create table if not exists friends
+        (user_id uuid primary key, friend_id uuid, status varchar default 'request');
+        create index if not exists
+        idx_user on friends(user_id);
+        create index if not exists
+        idx_friend on friends(friend_id);
+    `);
+    const friend = await db.query(
+        `
+        insert into friends(user_id, friend_id) values($1, $2)
+        returning *;
+    `,
+        [user_id, friend_id]
+    );
+    return friend.rows[0];
+};
+
+export const acceptRequest = async (db, { user_id, friend_id }) => {
+    const request = await db.query(`
+        update friends set status='accept' where 
+        user_id::text='${user_id}' and friend_id::text='${friend_id}'
+        returning *;
+    `);
+    return request.rows[0];
+};
+
+export const refuseRequest = async (db, { user_id, friend_id }) => {
+    const request = await db.query(`
+        delete from friends where 
+        user_id::text='${user_id}' and friend_id::text='${friend_id}'
+        returning *;
+    `);
+    return request.rows[0];
+};
+
+export const deleteFriends = async (db, { user_id, friend_id }) => {
+    const friend = await db.query(
+        `
+        delete from friends where 
+        user_id::text='${user_id}' and friend_id='${friend_id}'
+        or user_id::text='${friend_id}' and friend_id='${user_id}'
+        returning *;
+    `
+    );
+    return friend.rows[0];
+};
+
+export const getAllFriends = async (db, { user_id }) => {
+    const friends = await db.query(`
+        select id user_id, display_name, avatar_url from users
+        where id in
+        (select user_id from friends where 
+        user_id='${user_id}'
+        or friend_id='${user_id}'
+        union
+        select friend_id from friends where 
+        user_id='${user_id}'
+        or friend_id='${user_id}');
+    `);
+    return friends.rows;
+};

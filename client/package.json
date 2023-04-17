@@ -46,5 +46,6 @@
         "fs": true,
         "path": true,
         "os": true
-    }
+    },
+    "license": "MIT"
 }
