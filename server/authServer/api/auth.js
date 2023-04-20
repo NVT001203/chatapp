@@ -95,7 +95,6 @@ authRouter.post("/login", async (req, res) => {
             }
         }
     } catch (err) {
-        console.log(err.message);
         return handleError(err, res);
     }
 });
@@ -153,7 +152,6 @@ authRouter.post("/register", async (req, res) => {
             }
         }
     } catch (err) {
-        console.log(err.message);
         return handleError(err, res);
     }
 });

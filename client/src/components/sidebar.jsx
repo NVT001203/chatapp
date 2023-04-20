@@ -2,7 +2,8 @@ import Search from "./search";
 import Chats from "./chats";
 import "../pages/styles/sidebar.scss";
 
-function Sidebar({ toast }) {
+function Sidebar({ data }) {
+    const { toast } = data;
     return (
         <div className="sidebar">
             <h2>Nvt chat</h2>

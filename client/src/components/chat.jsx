@@ -14,7 +14,7 @@ function Chat({ data }) {
     const { currentChat, setCurrentChat } = useContext(ChatContext);
     const { currentUser } = useContext(AuthContext);
     return (
-        <div className="chat-container" id={data.hidden && "hidden"}>
+        <div className="chat-container" id={data.hidden ? "hidden" : ""}>
             {(currentChat &&
                 currentChat.members.includes(currentUser.user_id) && (
                     <div>

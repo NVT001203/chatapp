@@ -6,7 +6,7 @@ dotenv.config({
 });
 const client_url = process.env.CLIENT_URL;
 let users_online = {
-    // [socket]: user_id
+    // [user_id]: socket
 };
 
 let users_friends = {
@@ -91,7 +91,89 @@ export const socketConnect = (server) => {
                 }
             });
         });
+        socket.on("add-friend", ({ friend, user }) => {
+            if (Object.keys(users_online).includes(friend.friend_id)) {
+                socket
+                    .to(
+                        Object.values(users_online)[
+                            Object.keys(users_online).findIndex(
+                                (e) => e == friend.friend_id
+                            )
+                        ].id
+                    )
+                    .emit("friend-request", { friend, user });
+            }
+        });
+        socket.on("delete-friend", ({ friend, user }) => {
+            const friend_id =
+                friend.user_id == user.user_id
+                    ? friend.friend_id
+                    : friend.user_id;
+            users_friends = {
+                ...users_friends,
+                [user.user_id]: [
+                    ...users_friends[user.user_id]?.filter(
+                        (id) => id != friend_id
+                    ),
+                ],
+            };
+            socket.emit("friend-off", { friend: friend_id });
+            if (Object.keys(users_online).includes(friend_id)) {
+                const socket_id =
+                    Object.values(users_online)[
+                        Object.keys(users_online).findIndex(
+                            (e) => e == friend_id
+                        )
+                    ].id;
+                socket.to(socket_id).emit("deleted-friend", { friend });
+                socket
+                    .to(socket_id)
+                    .emit("friend-off", { friend: user.user_id });
+            }
+        });
+        socket.on("accept-friend", ({ friend, user }) => {
+            const friend_id =
+                friend.user_id == user.user_id
+                    ? friend.friend_id
+                    : friend.user_id;
+            users_friends = {
+                ...users_friends,
+                [user.user_id]: [...users_friends[user.user_id], friend_id],
+            };
+            socket.emit("friend_online-receive", { friend: friend_id });
+            if (Object.keys(users_online).includes(friend_id)) {
+                const socket_id =
+                    Object.values(users_online)[
+                        Object.keys(users_online).findIndex(
+                            (e) => e == friend_id
+                        )
+                    ].id;
+                socket.to(socket_id).emit("accepted-friend", { friend });
+                socket
+                    .to(socket_id)
+                    .emit("friend_online-receive", { friend: user.user_id });
+            }
+        });
+        socket.on("friend-online", ({ friends, user_id }) => {
+            const users_id = Object.keys(users_online);
+            const friends_online = friends.filter((friend) =>
+                users_id.includes(friend)
+            );
+            socket.emit("friends_online-receive", {
+                friends: friends_online,
+                user_id,
+            });
+            friends_online.forEach((friend) => {
+                users_online[friend] &&
+                    users_online[friend].emit("friend_online-receive", {
+                        friend: user_id,
+                    });
+            });
+            users_friends[user_id] = friends;
+        });
+
         socket.on("user_online", ({ user_id }) => {
+            const users_id = Object.keys(users_online);
             users_online = {
                 ...users_online,
                 [user_id]: socket,
@@ -99,13 +181,20 @@ export const socketConnect = (server) => {
             console.log("user connected");
         });
         socket.on("disconnect", () => {
-            delete users_online[
+            const user_id =
                 Object.keys(users_online)[
                     Object.values(users_online).findIndex(
                         (socketS) => socket.id == socketS.id
                     )
-                ]
-            ];
+                ];
+            users_friends[user_id]?.forEach((friend) => {
+                users_online[friend] &&
+                    users_online[friend].emit("friend-off", {
+                        friend: user_id,
+                    });
+            });
+            delete users_friends[user_id];
+            delete users_online[user_id];
             console.log("user disconnected");
         });
     });

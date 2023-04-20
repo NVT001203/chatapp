@@ -72,9 +72,9 @@ export const updatePublicInfo = async (
 ) => {
     const publicInfo = await db.query(`
         update users set display_name = '${display_name}', avatar_url = '${avatar_url}'
-        where id = '${user_id}';
+        where id = '${user_id}' returning display_name, avatar_url;
     `);
-    if (publicInfo.rowCount == 1) return true;
+    if (publicInfo.rowCount == 1) return publicInfo.rows[0];
     else throw new Error("Update failed!");
 };
 
@@ -166,7 +166,7 @@ export const addFriend = async (db, { user_id, friend_id }) => {
 export const acceptRequest = async (db, { user_id, friend_id }) => {
     const request = await db.query(`
         update friends set status='accept' where 
-        user_id::text='${user_id}' and friend_id::text='${friend_id}'
+        user_id::text='${friend_id}' and friend_id::text='${user_id}'
         returning *;
     `);
     return request.rows[0];
@@ -175,26 +175,15 @@ export const acceptRequest = async (db, { user_id, friend_id }) => {
 export const refuseRequest = async (db, { user_id, friend_id }) => {
     const request = await db.query(`
         delete from friends where 
-        user_id::text='${user_id}' and friend_id::text='${friend_id}'
+        user_id::text='${friend_id}' and friend_id::text='${user_id}' 
+        or user_id::text='${user_id}' and friend_id::text='${friend_id}' 
         returning *;
     `);
     return request.rows[0];
 };
 
-export const deleteFriends = async (db, { user_id, friend_id }) => {
-    const friend = await db.query(
-        `
-        delete from friends where 
-        user_id::text='${user_id}' and friend_id='${friend_id}'
-        or user_id::text='${friend_id}' and friend_id='${user_id}'
-        returning *;
-    `
-    );
-    return friend.rows[0];
-};
-
 export const getAllFriends = async (db, { user_id }) => {
-    const friends = await db.query(`
+    const friends_info = await db.query(`
         select id user_id, display_name, avatar_url from users
         where id in
         (select user_id from friends where 
@@ -205,5 +194,10 @@ export const getAllFriends = async (db, { user_id }) => {
         user_id='${user_id}'
         or friend_id='${user_id}');
     `);
-    return friends.rows;
+    const friends = await db.query(`
+        select * from friends where 
+        user_id='${user_id}'
+        or friend_id='${user_id}';
+    `);
+    return { friends: friends.rows, friends_info: friends_info.rows };
 };

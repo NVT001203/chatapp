@@ -29,41 +29,37 @@ function Login() {
         else if (password.length < 3 || password.length > 8)
             return notify("Password must be between in 3 and 8 letter!");
         // login request
-        setIsLoading(true);
-        const { data } = await axios.post(
-            loginRoute,
-            { email, password },
-            { withCredentials: true }
-        );
-        if (!data) {
+        try {
+            setIsLoading(true);
+            const { data } = await axios.post(
+                loginRoute,
+                { email, password },
+                { withCredentials: true }
+            );
+            const user = {
+                user_id: data.elements.user_id,
+                display_name: data.elements.display_name,
+                avatar_url: data.elements.avatar_url,
+            };
+            setCurrentUser(user);
+            dispatch({
+                type: "ADD_USERS",
+                users: { [user.user_id]: user },
+            });
+            publicInstance.defaults.headers.common["Authorization"] =
+                data.elements.access_token;
+            authInstance.defaults.headers.common["Authorization"] =
+                data.elements.access_token;
             setIsLoading(false);
-            return notify("Something went wrong! Please try again.");
-        } else {
-            if (data.status == "success") {
-                const user = {
-                    user_id: data.elements.user_id,
-                    display_name: data.elements.display_name,
-                    avatar_url: data.elements.avatar_url,
-                };
-                setCurrentUser(user);
-                dispatch({
-                    type: "ADD_USERS",
-                    users: { [user.user_id]: user },
-                });
-                publicInstance.defaults.headers.common["Authorization"] =
-                    data.elements.access_token;
-                authInstance.defaults.headers.common["Authorization"] =
-                    data.elements.access_token;
-                setIsLoading(false);
-                navigate("/messenger");
-            } else {
-                setIsLoading(false);
-                if (data.message == "Password is incorrect")
-                    return notify("Password is incorrect");
-                else if (data.message == "User is not exists")
-                    return notify("User is not exists");
-                else return notify("Something went wrong! Please try again.");
-            }
+            navigate("/messenger");
+        } catch (e) {
+            const data = e.response?.data;
+            setIsLoading(false);
+            if (data.message == "Password is incorrect")
+                return notify("Password is incorrect");
+            else if (data.message == "User is not exists")
+                return notify("User is not exists");
+            else return notify("Something went wrong! Please try again.");
         }
     };
 

@@ -169,7 +169,7 @@ const reducer = (state = initialStore, action) => {
             }
             return (initialStore = {
                 ...state,
-                photos,
+                photos: { ...photos },
             });
         }
         case "ADD_MESSAGE_DONE": {
@@ -187,10 +187,12 @@ const reducer = (state = initialStore, action) => {
         }
         case "REMOVE_MESSAGE_FAILURE": {
             delete state.messages[action.message.chat_id][action.id];
-            return (initialStore = state);
+            return (initialStore = {
+                ...state,
+            });
         }
         case "ADD_FRIENDS": {
-            return {
+            return (initialStore = {
                 ...state,
                 friends: {
                     [action.user_id]: state.friends
@@ -200,12 +202,37 @@ const reducer = (state = initialStore, action) => {
                           }
                         : { ...action.friends },
                 },
-            };
+            });
         }
         case "REMOVE_FRIEND": {
-            let new_state = state;
-            delete new_state.friends[action.user_id][action.friend_id];
-            return new_state;
+            delete state.friends[action.user_id][action.friend_id];
+            return (initialStore = {
+                ...state,
+            });
+        }
+        case "ADD_FRIENDS_ONLINE": {
+            return (initialStore = {
+                ...state,
+                friends_online: {
+                    [action.user_id]: state.friends_online
+                        ? [
+                              ...state.friends_online[action.user_id],
+                              ...action.friends_online,
+                          ]
+                        : action.friends_online,
+                },
+            });
+        }
+        case "FRIEND_OFF": {
+            const friends_online = state.friends_online[action.user_id]?.filter(
+                (friend) => friend != action.friend_off
+            );
+            return (initialStore = {
+                ...state,
+                friends_online: {
+                    [action.user_id]: [...friends_online],
+                },
+            });
         }
         default:
             return (initialStore = state);
@@ -220,21 +247,25 @@ const sortChats = (chats) => {
     return Object.entries(objsort).sort();
 };
 
+const sortFriends = (friends) => {
+    return Object.entries(friends)
+        .map(([key, value]) => [value.status, key])
+        .sort()
+        .reverse()
+        .map(([value, key]) => key);
+};
+
 export const StoreContext = createContext();
 
 export const StoreContextProvider = ({ children }) => {
     const [store, dispatch] = useReducer(reducer, initialStore);
-
-    useEffect(() => {
-        console.log({ friends: store.friends, users: store.users });
-    }, [store.friends]);
-
     return (
         <StoreContext.Provider
             value={{
                 store,
                 dispatch,
                 sortChats,
+                sortFriends,
             }}
         >
             {children}

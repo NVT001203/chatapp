@@ -16,7 +16,15 @@ import Loading from "../imgs/Loading.gif";
 import { socket } from "../socket/socket";
 
 function ChatInfo({ data }) {
-    const { toast, hidden, setHidden, currentUser, refreshToken } = data;
+    const {
+        toast,
+        hidden,
+        setHidden,
+        currentUser,
+        refreshToken,
+        firstMount,
+        setFirstMount,
+    } = data;
     const { currentChat, setCurrentChat } = useContext(ChatContext);
     const { store, dispatch, sortChats } = useContext(StoreContext);
     const [name, setName] = useState("");
@@ -31,11 +39,18 @@ function ChatInfo({ data }) {
     const [showAllAdmins, setShowAllAdmins] = useState(false);
     const [loading, setLoading] = useState(false);
     const [loadingError, setLoadingError] = useState(false);
+    let changed = false;
     const navigate = useNavigate();
+
+    const setChanged = (bool) => (changed = bool);
 
     useEffect(() => {
         !currentChat && setHidden(true);
     }, [currentChat]);
+
+    useEffect(() => {
+        changed = true;
+    }, [currentChat?.id]);
     useEffect(() => {
         if (!currentChat?.is_group) {
             const name =
@@ -63,6 +78,10 @@ function ChatInfo({ data }) {
                     type: "ADD_PHOTOS",
                     photos: data.elements,
                 });
+                let photos_obj = {};
+                data.elements.forEach(
+                    (photo) => (photos_obj[photo.id] = photo)
+                );
             } catch (e) {
                 const data = e.response.data;
                 if (data.message == "jwt expired") {
@@ -76,6 +95,10 @@ function ChatInfo({ data }) {
                                     type: "ADD_PHOTOS",
                                     messages: data.elements,
                                 });
+                                let photos_obj = {};
+                                data.elements.forEach(
+                                    (photo) => (photos_obj[photo.id] = photo)
+                                );
                             }
                         })
                         .catch((e) => {
@@ -93,6 +116,14 @@ function ChatInfo({ data }) {
                 }
             }
         };
+        (firstMount || changed) &&
+            currentChat &&
+            !store.photos[currentChat.id] &&
+            store.messages[currentChat.id] &&
+            getPhotos() &&
+            setFirstMount(false) &&
+            setChanged(false);
+
         currentChat &&
             store.photos[currentChat.id] &&
             store.messages[currentChat.id] &&
@@ -113,11 +144,10 @@ function ChatInfo({ data }) {
             ).length > 0 &&
             getPhotos();
     }, [
-        currentChat,
+        currentChat?.id,
         currentUser,
         store.users[currentChat?.members[0]]?.display_name,
         store.users[currentChat?.members[1]]?.display_name,
-        store.photos[currentChat?.id],
     ]);
 
     const hanleSetName = async (e) => {
@@ -298,60 +328,31 @@ function ChatInfo({ data }) {
 
     const hanldeSearchUser = async (e) => {
         if (e.keyCode == 13 && inputSearchUser.length > 0) {
-            publicInstance
-                .get(
-                    `/user/search_users/${inputSearchUser}?chat_id=${currentChat.id}`
-                )
-                .then(({ data }) => {
-                    const friendsObj = {};
-                    for (const friend of data.elements) {
-                        friendsObj[friend.user_id] = friend;
+            if (store.friends && store.friends[currentUser.user_id]) {
+                let pattern = new RegExp(`${inputSearchUser}`, "i");
+                const list_friends_match = [];
+                Object.values(store.friends[currentUser.user_id]).forEach(
+                    (e) => {
+                        if (
+                            store.users[e.friend_id].display_name.match(
+                                pattern
+                            ) &&
+                            e.status == "accept"
+                        )
+                            return list_friends_match.push(
+                                store.users[e.friend_id]
+                            );
                     }
-                    dispatch({
-                        type: "ADD_USERS",
-                        users: friendsObj,
-                    });
+                );
 
-                    setFriends(data.elements);
-                    setSearched(true);
-                    setSearchUserToggle(true);
-                })
-                .catch((error) => {
-                    const data = error.response.data;
-                    if (data.message == "jwt expired") {
-                        refreshToken()
-                            .then(async (data) => {
-                                const res = await publicInstance.get(
-                                    `/user/search_users/${inputSearchUser}?chat_id=${currentChat.id}`
-                                );
-                                setFriends(res.data.elements);
-                                const friendsObj = {};
-                                for (const friend of res.data.elements) {
-                                    friendsObj[friend.user_id] = friend;
-                                }
-                                dispatch({
-                                    type: "ADD_USERS",
-                                    users: friendsObj,
-                                });
-                                setSearchUserToggle(true);
-                                setSearched(true);
-                            })
-                            .catch((e) => {
-                                if (e == "Server error") {
-                                    toast("Server error! Please try again.");
-                                } else {
-                                    toast(
-                                        "The login session has expired! Please login again."
-                                    );
-                                    setTimeout(() => {
-                                        navigate("/login");
-                                    }, 6000);
-                                }
-                            });
-                    } else {
-                        return toast("Something went wrong! Please try again.");
-                    }
-                });
+                setFriends(list_friends_match);
+                setSearched(true);
+                setSearchUserToggle(true);
+            } else {
+                toast("Please make friends to search");
+                setSearched(true);
+                setSearchUserToggle(true);
+            }
         } else if (e.keyCode == 13 && inputSearchUser.length == 0)
             setSearched(false);
     };

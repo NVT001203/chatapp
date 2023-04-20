@@ -21,3 +21,12 @@ export const credential_validate_login = Joi.object({
         })
         .required(),
 }).with("email", "password");
+
+export const email_validator = Joi.object({
+    email: Joi.string()
+        .email({
+            minDomainSegments: 2,
+            tlds: { allow: ["com", "net"] },
+        })
+        .required(),
+});

@@ -133,6 +133,7 @@ function Input({ data }) {
                     socket.emit("message", {
                         message: data.elements.message.message,
                         photo: data.elements.message.photo,
+                        chat: data.elements.chat,
                     });
                     setCurrentChat(data.elements.chat);
                 } else {
@@ -176,6 +177,7 @@ function Input({ data }) {
                                 socket.emit("message", {
                                     message: data.elements.message.message,
                                     photo: data.elements.message.photo,
+                                    chat: data.elements.chat,
                                 });
                                 setCurrentChat(data.elements.chat);
                             } else {

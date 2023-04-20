@@ -25,55 +25,29 @@ function Search({ toast }) {
 
     const handleKeydown = (e, action) => {
         if ((e.keyCode == 13 || action == "click") && displayName.length > 0) {
-            publicInstance
-                .get(`/user/search_users/${displayName}`)
-                .then(({ data }) => {
-                    const friendsObj = {};
-                    for (const friend of data.elements) {
-                        friendsObj[friend.user_id] = friend;
+            if (store.friends && store.friends[currentUser.user_id]) {
+                let pattern = new RegExp(`${displayName}`, "i");
+                const list_friends_match = [];
+                Object.values(store.friends[currentUser.user_id]).forEach(
+                    (e) => {
+                        if (
+                            store.users[e.friend_id].display_name.match(
+                                pattern
+                            ) &&
+                            e.status == "accept"
+                        )
+                            return list_friends_match.push(
+                                store.users[e.friend_id]
+                            );
                     }
-                    dispatch({
-                        type: "ADD_USERS",
-                        users: friendsObj,
-                    });
-                    setFriends(data.elements);
-                    setSearched(true);
-                })
-                .catch((error) => {
-                    const data = error.response.data;
-                    if (data.message == "jwt expired") {
-                        refreshToken()
-                            .then(async (data) => {
-                                const res = await publicInstance.get(
-                                    `/user/search_users/${displayName}`
-                                );
-                                setFriends(res.data.elements);
-                                const friendsObj = {};
-                                for (const friend of res.data.elements) {
-                                    friendsObj[friend.user_id] = friend;
-                                }
-                                dispatch({
-                                    type: "ADD_USERS",
-                                    users: friendsObj,
-                                });
-                                setSearched(true);
-                            })
-                            .catch((e) => {
-                                if (e == "Server error") {
-                                    toast("Server error! Please try again.");
-                                } else {
-                                    toast(
-                                        "The login session has expired! Please login again."
-                                    );
-                                    setTimeout(() => {
-                                        navigate("/login");
-                                    }, 6000);
-                                }
-                            });
-                    } else {
-                        return toast("Something went wrong! Please try again.");
-                    }
-                });
+                );
+
+                setFriends(list_friends_match);
+                setSearched(true);
+            } else {
+                toast("Please make friends to search");
+                setSearched(true);
+            }
         } else if (
             (e.keyCode == 13 || action == "click") &&
             displayName.length == 0

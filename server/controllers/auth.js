@@ -84,9 +84,9 @@ export const deleteUser = async (db, { user_id, password }) => {
 export const updateEmail = async (db, { user_id, email }) => {
     const email_updated = await db.query(`
         update users set email='${email}' 
-        where id = '${user_id}';
+        where id = '${user_id}' returning email;
     `);
-    if (email_updated.rowCount == 1) return true;
+    if (email_updated.rowCount == 1) return email_updated.rows[0];
     else throw new Error("Update failed!");
 };
 
@@ -119,4 +119,12 @@ export const checkUserExists = async (db, { email }) => {
         if (e.message == `relation "users" does not exist`) return true;
         else throw new Error("Server error");
     }
+};
+
+export const checkUserOauth = async (db, { user_id }) => {
+    const check = await db.query(`
+        select oauth_id from users where id='${user_id}';
+    `);
+    if (check.rows[0]) return true;
+    else return false;
 };
