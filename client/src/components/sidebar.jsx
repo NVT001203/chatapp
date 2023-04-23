@@ -6,7 +6,7 @@ function Sidebar({ data }) {
     const { toast } = data;
     return (
         <div className="sidebar">
-            <h2>Nvt chat</h2>
+            <h2 className="Logo">Nvt chat</h2>
             <Search toast={toast} />
             <Chats toast={toast} />
         </div>

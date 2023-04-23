@@ -126,7 +126,6 @@ chatRouter.put("/add_members/:chat_id", async (req, res) => {
             elements: { chat: members_updated, notices },
         });
     } catch (e) {
-        console.log(e);
         return handleError(e, res);
     }
 });
@@ -306,7 +305,6 @@ chatRouter.delete("/delete_chat/:chat_id", async (req, res) => {
             });
         }
     } catch (e) {
-        console.log(e);
         return handleError(e, res);
     }
 });
@@ -334,7 +332,6 @@ chatRouter.delete("/leave_group/:chat_id", async (req, res) => {
             elements: { chat, notice, member: user_id },
         });
     } catch (e) {
-        console.log(e);
         return handleError(e, res);
     }
 });
@@ -373,7 +370,6 @@ chatRouter.put("/add_admin/:chat_id", async (req, res) => {
             });
         }
     } catch (e) {
-        console.log(e);
         return handleError(e, res);
     }
 });

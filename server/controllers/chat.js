@@ -68,7 +68,7 @@ export const addMembers = async (db, { chat_id, members, last_message }) => {
             ).length > 0
                 ? `array['${add_members.rows[0].members_leaved
                       .filter((member) => !members.includes(member))
-                      .join(`', '`)}']`
+                      .join(`'::uuid, '`)}'::uuid]`
                 : `'{}'`;
         add_members = await db.query(`
             update chats set members_leaved=${arr}
@@ -97,7 +97,7 @@ export const getAdmins = async (db, { chat_id }) => {
 export const removeMember = async (db, { chat_id, user_id }) => {
     const remove_members = await db.query(`
         update chats set members=array_remove(members, '${user_id}'),
-        members_leaved=array_append(members_leaved, '${user_id}'),
+        members_leaved=array_append(members_leaved, '${user_id}'::uuid),
         admins=array_remove(admins, '${user_id}'),
         updated_at=current_timestamp
         where id='${chat_id}' returning *;
@@ -157,9 +157,13 @@ export const getChats = async (db, { user_id }) => {
         const chats = await db.query(`
             select * from chats where id in (select unnest(chats) from users where id='${user_id}') order by updated_at desc;
         `);
-        return chats.rows;
+        const hidden_chats = await db.query(`
+            select * from chats where id in (select unnest(hidden_chats) from users where id='${user_id}') order by updated_at desc;
+        `);
+        return { chats: chats.rows, hidden_chats: hidden_chats.rows };
     } catch (e) {
-        if (e.message == `relation "chats" does not exist`) return [];
+        if (e.message == `relation "chats" does not exist`)
+            return { chats: [], hidden_chats: [] };
         else throw new Error(e.message);
     }
 };

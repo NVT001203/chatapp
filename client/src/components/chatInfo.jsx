@@ -326,7 +326,7 @@ function ChatInfo({ data }) {
         }
     };
 
-    const hanldeSearchUser = async (e) => {
+    const hanldeSearchUser = async (e, chat) => {
         if (e.keyCode == 13 && inputSearchUser.length > 0) {
             if (store.friends && store.friends[currentUser.user_id]) {
                 let pattern = new RegExp(`${inputSearchUser}`, "i");
@@ -337,7 +337,10 @@ function ChatInfo({ data }) {
                             store.users[e.friend_id].display_name.match(
                                 pattern
                             ) &&
-                            e.status == "accept"
+                            e.status == "accept" &&
+                            !store.chats[currentChat.id].members.includes(
+                                e.friend_id
+                            )
                         )
                             return list_friends_match.push(
                                 store.users[e.friend_id]
@@ -560,7 +563,6 @@ function ChatInfo({ data }) {
                 chat_id: chat.id,
             });
             setCurrentChat((pre) => {
-                console.log({ pre });
                 if (pre?.id != chat.id) return pre;
                 else
                     return Object.keys(store.chats).filter((id) => id != pre.id)
@@ -590,7 +592,6 @@ function ChatInfo({ data }) {
                             chat_id: chat.id,
                         });
                         setCurrentChat((pre) => {
-                            console.log({ pre });
                             if (pre?.id != chat.id) return pre;
                             else
                                 return Object.keys(store.chats).filter(
@@ -1185,7 +1186,12 @@ function ChatInfo({ data }) {
                                         <div className="add_member-wrapper">
                                             <input
                                                 placeholder="Search friend..."
-                                                onKeyDown={hanldeSearchUser}
+                                                onKeyDown={(e) =>
+                                                    hanldeSearchUser(
+                                                        e,
+                                                        currentChat
+                                                    )
+                                                }
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }

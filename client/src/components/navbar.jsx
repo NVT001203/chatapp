@@ -1,4 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+import More from "../imgs/more.png";
+import Video from "../imgs/video.png";
+import Telephone from "../imgs/telephone.png";
 
 function Navbar({ data }) {
     const { setHidden, currentChat, currentUser, store } = data;
@@ -41,12 +44,13 @@ function Navbar({ data }) {
                 </div>
             </div>
             <div className="more-wrapper">
-                <div className="icon video"></div>
-                <div className="icon phone"></div>
-                <div
+                <img src={Video} className="icon video" />
+                <img src={Telephone} className="icon phone" />
+                <img
                     className="icon more"
+                    src={More}
                     onClick={() => setHidden((pre) => !pre)}
-                ></div>
+                />
             </div>
         </div>
     );

@@ -12,11 +12,11 @@ function Chat({ data }) {
     const { toast } = data;
     const { store, dispatch } = useContext(StoreContext);
     const { currentChat, setCurrentChat } = useContext(ChatContext);
-    const { currentUser } = useContext(AuthContext);
+    const { currentUser, refreshToken } = useContext(AuthContext);
     return (
         <div className="chat-container" id={data.hidden ? "hidden" : ""}>
             {(currentChat &&
-                currentChat.members.includes(currentUser.user_id) && (
+                currentChat.members?.includes(currentUser.user_id) && (
                     <div>
                         <Navbar
                             data={{
@@ -26,7 +26,16 @@ function Chat({ data }) {
                                 store,
                             }}
                         />
-                        <Messages data={{ currentChat, store, currentUser }} />
+                        <Messages
+                            data={{
+                                currentChat,
+                                store,
+                                currentUser,
+                                toast,
+                                dispatch,
+                                refreshToken,
+                            }}
+                        />
                         <Input
                             data={{
                                 dispatch,

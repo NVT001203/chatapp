@@ -229,11 +229,18 @@ userRouter.get("/:id/get_resource", async (req, res) => {
         const { user_id } = req.user;
         if (req_id != user_id)
             throw new Error("User can only get your resource on its own");
-        const chats = await getChats(client, { user_id });
+        const { chats, hidden_chats } = await getChats(client, { user_id });
+        const all_chat = chats
+            ? hidden_chats
+                ? [...chats, ...hidden_chats]
+                : [...chats]
+            : hidden_chats
+            ? [...hidden_chats]
+            : [];
         let messages_id = [];
         let members = [];
         let last_notices = [];
-        for (const chat of chats) {
+        for (const chat of all_chat) {
             if (!chat.last_message) last_notices.push(chat.id);
             messages_id.push(chat.last_message);
             members = [...members, ...chat.members, ...chat.members_leaved];
@@ -259,7 +266,14 @@ userRouter.get("/:id/get_resource", async (req, res) => {
         res.status(200).json({
             code: 200,
             status: "success",
-            elements: { chats, messages, users, friends, friends_info },
+            elements: {
+                chats,
+                messages,
+                users,
+                friends,
+                friends_info,
+                hidden_chats,
+            },
         });
     } catch (e) {
         handleError(e, res);

@@ -243,19 +243,22 @@ function Search({ toast }) {
             <img src={SearchIcon} onClick={(e) => handleKeydown(e, "click")} />
             <input
                 type="text"
-                placeholder={(addUser && "Add to group...") || "Search..."}
+                placeholder={
+                    (addUser && "Create group...") || "Search friend..."
+                }
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 onKeyDown={handleKeydown}
                 ref={searchRef}
             />
             <img
-                src={(addUser && SearchUser) || Group}
+                src={(addUser && Group) || SearchUser}
                 className="add-group"
                 onClick={() => {
                     setAddUser((pre) => !pre);
                     searchRef.current.focus();
                 }}
+                id={!addUser ? "small" : ""}
             />
             {searched && (
                 <div className={(!addUser && "friends") || "friends add-user"}>

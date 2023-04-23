@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { publicInstance } from "../config/axiosConfig";
 import { AuthContext } from "../contexts/authContext";
@@ -9,7 +9,9 @@ function Chats({ toast }) {
     const { store, dispatch, sortChats } = useContext(StoreContext);
     const { currentChat, setCurrentChat } = useContext(ChatContext);
     const { currentUser, refreshToken } = useContext(AuthContext);
+    const [onRightClick, setOnRightClick] = useState(null);
     const navigate = useNavigate();
+    const ref = useRef();
     const handleGetMessages = async (chat) => {
         if (
             store.messages[chat.id] &&
@@ -37,7 +39,6 @@ function Chats({ toast }) {
                 });
             } else toast("Something went wrong! Please try again.");
         } catch (e) {
-            console.log(e);
             const data = e.response.data;
             if (data.message == "jwt expired") {
                 refreshToken()
@@ -67,6 +68,56 @@ function Chats({ toast }) {
             }
         }
     };
+
+    const handleHiddenChat = async (id) => {
+        try {
+            const { data } = await publicInstance.put(
+                `user/${currentUser.user_id}/hidden_chat`,
+                {
+                    chat_id: id,
+                }
+            );
+            dispatch({
+                type: "HIDDEN_CHAT",
+                chat_id: id,
+            });
+        } catch (e) {
+            const data = e.response?.data;
+            if (data?.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.put(
+                            `user/${currentUser.user_id}/hidden_chat`,
+                            {
+                                chat_id: id,
+                            }
+                        );
+                        dispatch({
+                            type: "HIDDEN_CHAT",
+                            chat_id: id,
+                        });
+                    })
+                    .catch((e) => {
+                        if (e == "Server error") {
+                            return toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                toast("Server error! Please try again.");
+            }
+        }
+    };
+
+    useEffect(() => {
+        ref.current?.scrollIntoView({ behavior: "smooth" });
+    }, [currentChat?.id]);
 
     return (
         <div className="chats">
@@ -192,7 +243,19 @@ function Chats({ toast }) {
                                     currentChat?.id == id && "active"
                                 }`}
                                 key={id}
-                                onClick={() => handleGetMessages(data)}
+                                onClick={() => {
+                                    if (onRightClick) setOnRightClick(null);
+                                    handleGetMessages(data);
+                                }}
+                                onContextMenu={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setOnRightClick((pre) => {
+                                        if (pre == id) return null;
+                                        else return id;
+                                    });
+                                }}
+                                ref={ref}
                             >
                                 <div
                                     className="chat-avatar"
@@ -207,6 +270,19 @@ function Chats({ toast }) {
                                     </span>
                                 </div>
                                 <span className="updated">{updated_at}</span>
+                                {onRightClick == id && (
+                                    <div className="chat-feature">
+                                        <span
+                                            className="feature"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleHiddenChat(id);
+                                            }}
+                                        >
+                                            Delete
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         );
                     })) || <div></div>}

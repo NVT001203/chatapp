@@ -40,7 +40,7 @@ export const handleError = (err, res) => {
             return res.status(403).json({
                 code: 403,
                 status: "error",
-                message: "Only members have this permissionn",
+                message: "Only members have this permission",
             });
         case `"password" is required`:
             return res.status(400).json({

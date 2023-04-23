@@ -5,6 +5,7 @@
     div {
         height: 100%;
         .navbar {
+            width: 100%;
             display: flex;
             height: auto;
             padding: 30px 20px 16px;
@@ -39,28 +40,17 @@
             .more-wrapper {
                 width: 132px;
                 display: flex;
-                padding: 10px 20px;
+                padding: 10px;
                 align-items: center;
                 justify-content: space-between;
-
+                gap: 8px;
                 .icon {
-                    width: 20px;
-                    height: 20px;
+                    width: 24px;
+                    height: 24px;
                     background-repeat: no-repeat;
                     background-size: cover;
                     background-position: center;
                     cursor: pointer;
-                }
-                .video {
-                    background-image: url("../../imgs/video.png");
-                    width: 24px;
-                    height: 24px;
-                }
-                .phone {
-                    background-image: url("../../imgs/telephone.png");
-                }
-                .more {
-                    background-image: url("../../imgs/more.png");
                 }
             }
         }
@@ -86,7 +76,7 @@
                     flex-wrap: wrap;
                     height: auto;
                     width: auto;
-                    // gap: 10px;
+                    position: relative;
                     .avatar {
                         width: 36px;
                         height: 36px;
@@ -97,16 +87,12 @@
                     }
 
                     .message-text {
-                        &:hover {
-                            & ~ .message-actions {
-                                display: flex;
-                            }
-                        }
                         margin-top: 10px;
                         margin-left: 10px;
                         display: block;
                         font-size: 14px;
                         padding: 10px;
+                        width: auto;
                         max-width: 400px;
                         overflow-wrap: break-word;
                         background-color: rgb(33, 114, 68, 0.8);
@@ -115,52 +101,178 @@
                         color: #fff;
                         position: relative;
                     }
+
+                    .recall {
+                        background-color: #959595;
+                        border-radius: 0;
+                        cursor: default;
+                    }
                     .message-image {
-                        &:hover {
-                            & ~ .message-actions {
-                                display: flex;
-                            }
-                        }
                         margin-left: 10px;
+                        width: auto;
                         max-width: 300px;
                         max-height: 300px;
                         position: relative;
                     }
-                    .bridge {
-                        width: 8px;
-                        height: 100%;
-                        &:hover {
-                            & ~ .message-actions {
-                                display: flex;
-                            }
-                        }
-                    }
                     .message-actions {
-                        display: none;
-                        &:hover {
-                            display: flex;
-                        }
                         border-radius: 18px;
+                        display: flex;
+                        top: 0;
+                        flex-direction: column;
+                        margin-left: 10px;
                         padding: 2px 6px;
-                        background-color: rgb(33, 114, 68, 0.5);
+                        background-color: transparent;
                         margin-top: 8px;
                         gap: 4px;
                         width: auto;
                         height: 38px;
+                        position: relative;
+                        .wrapper {
+                            display: flex;
+                            gap: 4px;
+                            align-items: center;
+                        }
+                        .icon-wrapper {
+                            width: 38px;
+                            height: 38px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
                         .action-icon {
                             width: 34px;
                             height: 34px;
+                            &:hover {
+                                width: 38px;
+                                height: 38px;
+                            }
                             border-radius: 50%;
-                            border: 8px solid rgba(0, 0, 0, 0.4);
-                            filter: grayscale(50%);
-                            filter: invert(100%);
+                            border: 8px solid rgba(236, 124, 124, 0.4);
                             cursor: pointer;
                         }
-                        .more {
-                            width: 34px;
-                            height: 34px;
-                            background-color: rgb(33, 114, 68, 0.8);
-                            padding: 2px;
+                        .delete-message {
+                            border: none;
+                            border-radius: 0;
+                            width: 30px;
+                            height: 30px;
+                        }
+                        .popular-reaction {
+                            display: flex;
+                            z-index: 1;
+                            align-items: center;
+                            background-color: rgba(117, 58, 136, 0.7);
+                            padding: 0px 4px;
+                            border-radius: 10px;
+                            span {
+                                display: block;
+                                width: 28px;
+                                height: 28px;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                font-size: 18px;
+                                &:hover {
+                                    font-size: 20px;
+                                }
+                            }
+                            .more {
+                                display: block;
+                                width: 28px;
+                                height: 28px;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 3px;
+                                cursor: pointer;
+                                margin-top: 1px;
+                                &:hover {
+                                    padding: 1px;
+                                }
+                            }
+                            .emoji-picker {
+                                border-radius: 10px;
+                                position: absolute;
+                                z-index: 1;
+                                height: 200px;
+                                top: 80px;
+                                left: 0;
+                                overflow-y: scroll;
+                                &::-webkit-scrollbar {
+                                    display: none;
+                                }
+                            }
+                        }
+                    }
+                    .reaction-wrapper {
+                        position: absolute;
+                        left: 50px;
+                        display: flex;
+                        top: calc(100% - 6px);
+                        padding: 2px 4px;
+                        background-color: #ffc3a0;
+                        height: auto;
+                        border-radius: 10px;
+                        gap: -10px;
+                        cursor: pointer;
+                        .reaction {
+                            font-size: 14px;
+                        }
+                        .reaction + .reaction {
+                            margin-left: -10px;
+                        }
+                    }
+                    .all_reaction-container {
+                        position: absolute;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 16px;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 2;
+                        width: 300px;
+                        height: auto;
+                        background-color: #ffc3a0;
+                        border-radius: 12px;
+                        padding: 10px 10px;
+                        overflow: hidden;
+                        .title {
+                            font-size: 20px;
+                            font-weight: 600;
+                            background-color: #753a88;
+                            color: #fff;
+                            width: 100%;
+                            text-align: center;
+                            padding: 10px 20px;
+                            border-radius: 12px;
+                        }
+                        .all_reaction {
+                            max-height: 300px;
+                            overflow-y: scroll;
+                            width: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 4px;
+                            &::-webkit-scrollbar {
+                                display: none;
+                            }
+                            .item {
+                                width: 100%;
+                                padding: 4px 8px;
+                                display: flex;
+                                gap: 10px;
+                                background-color: #cc2b5e;
+                                align-items: end;
+                                cursor: pointer;
+                                .name {
+                                    color: #fff;
+                                    width: calc(100% - 20px - 10px);
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    display: -webkit-box;
+                                    -webkit-line-clamp: 1;
+                                    -webkit-box-orient: vertical;
+                                    overflow: hidden;
+                                }
+                            }
                         }
                     }
                 }
@@ -172,12 +284,23 @@
                         border-top-right-radius: 0;
                         border-top-left-radius: 10px;
                     }
+                    .recall {
+                        border-radius: 0;
+                    }
                     .message-image {
                         margin: 0 10px 0 0;
                     }
                     .message-actions {
                         margin-top: -2px;
-                        flex-direction: row-reverse;
+                        flex-direction: column;
+                        margin-right: 10px;
+                        .wrapper {
+                            flex-direction: row-reverse;
+                        }
+                    }
+                    .reaction-wrapper {
+                        right: 16px;
+                        left: unset;
                     }
                 }
                 .notice-wrapper {
@@ -199,6 +322,20 @@
                     }
                 }
             }
+        }
+
+        .x-symbol {
+            position: absolute;
+            display: block;
+            overflow: unset;
+            font-size: 16px;
+            background-color: aqua;
+            border-radius: 50%;
+            padding: 4px 12px;
+            font-weight: 600;
+            right: -2px;
+            top: -2px;
+            cursor: pointer;
         }
 
         .input-container {

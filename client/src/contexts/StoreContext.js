@@ -1,14 +1,20 @@
-import {
-    createContext,
-    useContext,
-    useEffect,
-    useReducer,
-    useState,
-} from "react";
-import { AuthContext } from "./authContext";
-import { socket } from "../socket/socket";
+import { createContext, useReducer } from "react";
 
 const chats = {
+    // id: {
+    //     id: "",
+    //     name: "",
+    //     is_group: "",
+    //     chat_avatar: "",
+    //     members: [],
+    //     admins: "",
+    //     last_message: "",
+    //     background_image: "",
+    //     updated_at: "",
+    // },
+};
+
+const hidden_chats = {
     // id: {
     //     id: "",
     //     name: "",
@@ -62,6 +68,7 @@ let initialStore = {
     messages,
     users,
     photos,
+    hidden_chats,
 };
 
 const reducer = (state = initialStore, action) => {
@@ -121,6 +128,27 @@ const reducer = (state = initialStore, action) => {
             delete state.chats[action.chat_id];
             return (initialStore = state);
         }
+        case "ADD_HIDDEN_CHATS": {
+            return (initialStore = {
+                ...state,
+                hidden_chats: { ...state.hidden_chats, ...action.hidden_chats },
+            });
+        }
+        case "HIDDEN_CHAT": {
+            state.hidden_chats[action.chat_id] = state.chats[action.chat_id];
+            delete state.chats[action.chat_id];
+            return {
+                ...state,
+            };
+        }
+        case "DISPLAY_CHAT": {
+            state.chats[action.chat_id] = state.hidden_chats[action.chat_id];
+            delete state.hidden_chats[action.chat_id];
+            console.log(state);
+            return {
+                ...state,
+            };
+        }
         case "ADD_MESSAGES": {
             let messages = state.messages;
             for (const message of action.messages) {
@@ -156,6 +184,7 @@ const reducer = (state = initialStore, action) => {
         }
         case "ADD_PHOTOS": {
             let photos = state.photos;
+            if (!action.photos) return state;
             for (const photo of action.photos) {
                 photos = {
                     ...photos,
@@ -214,12 +243,14 @@ const reducer = (state = initialStore, action) => {
             return (initialStore = {
                 ...state,
                 friends_online: {
-                    [action.user_id]: state.friends_online
-                        ? [
-                              ...state.friends_online[action.user_id],
-                              ...action.friends_online,
-                          ]
-                        : action.friends_online,
+                    [action?.user_id]:
+                        state.friends_online &&
+                        state.friends_online[action?.user_id]
+                            ? [
+                                  ...state.friends_online[action?.user_id],
+                                  ...action.friends_online,
+                              ]
+                            : action.friends_online,
                 },
             });
         }

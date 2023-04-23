@@ -147,7 +147,7 @@ export const searchUsers = async (db, { display_name }) => {
 export const addFriend = async (db, { user_id, friend_id }) => {
     await db.query(`
         create table if not exists friends
-        (user_id uuid primary key, friend_id uuid, status varchar default 'request');
+        (user_id uuid, friend_id uuid, status varchar default 'request');
         create index if not exists
         idx_user on friends(user_id);
         create index if not exists
@@ -183,21 +183,26 @@ export const refuseRequest = async (db, { user_id, friend_id }) => {
 };
 
 export const getAllFriends = async (db, { user_id }) => {
-    const friends_info = await db.query(`
-        select id user_id, display_name, avatar_url from users
-        where id in
-        (select user_id from friends where 
-        user_id='${user_id}'
-        or friend_id='${user_id}'
-        union
-        select friend_id from friends where 
-        user_id='${user_id}'
-        or friend_id='${user_id}');
-    `);
-    const friends = await db.query(`
-        select * from friends where 
-        user_id='${user_id}'
-        or friend_id='${user_id}';
-    `);
-    return { friends: friends.rows, friends_info: friends_info.rows };
+    try {
+        const friends_info = await db.query(`
+            select id user_id, display_name, avatar_url from users
+            where id in
+            (select user_id from friends where 
+            user_id='${user_id}'
+            or friend_id='${user_id}'
+            union
+            select friend_id from friends where 
+            user_id='${user_id}'
+            or friend_id='${user_id}');
+        `);
+        const friends = await db.query(`
+            select * from friends where 
+            user_id='${user_id}'
+            or friend_id='${user_id}';
+        `);
+        return { friends: friends.rows, friends_info: friends_info.rows };
+    } catch (e) {
+        if (e.message == `relation "friends" does not exist`)
+            return { friends: [], friends_info: [] };
+    }
 };

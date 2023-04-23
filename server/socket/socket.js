@@ -109,14 +109,16 @@ export const socketConnect = (server) => {
                 friend.user_id == user.user_id
                     ? friend.friend_id
                     : friend.user_id;
-            users_friends = {
-                ...users_friends,
-                [user.user_id]: [
-                    ...users_friends[user.user_id]?.filter(
-                        (id) => id != friend_id
-                    ),
-                ],
-            };
+            users_friends = users_friends[user.user_id]
+                ? {
+                      ...users_friends,
+                      [user.user_id]: [
+                          ...users_friends[user.user_id]?.filter(
+                              (id) => id != friend_id
+                          ),
+                      ],
+                  }
+                : { ...users_friends, [user.user_id]: [] };
             socket.emit("friend-off", { friend: friend_id });
             if (Object.keys(users_online).includes(friend_id)) {
                 const socket_id =
@@ -136,11 +138,15 @@ export const socketConnect = (server) => {
                 friend.user_id == user.user_id
                     ? friend.friend_id
                     : friend.user_id;
-            users_friends = {
-                ...users_friends,
-                [user.user_id]: [...users_friends[user.user_id], friend_id],
-            };
-            socket.emit("friend_online-receive", { friend: friend_id });
+            users_friends = users_friends[user.user_id]
+                ? {
+                      ...users_friends,
+                      [user.user_id]: [
+                          ...users_friends[user.user_id],
+                          friend_id,
+                      ],
+                  }
+                : { ...users_friends, [user.user_id]: [friend_id] };
             if (Object.keys(users_online).includes(friend_id)) {
                 const socket_id =
                     Object.values(users_online)[
@@ -152,6 +158,7 @@ export const socketConnect = (server) => {
                 socket
                     .to(socket_id)
                     .emit("friend_online-receive", { friend: user.user_id });
+                socket.emit("friend_online-receive", { friend: friend_id });
             }
         });
         socket.on("friend-online", ({ friends, user_id }) => {
@@ -173,7 +180,6 @@ export const socketConnect = (server) => {
         });
 
         socket.on("user_online", ({ user_id }) => {
-            const users_id = Object.keys(users_online);
             users_online = {
                 ...users_online,
                 [user_id]: socket,

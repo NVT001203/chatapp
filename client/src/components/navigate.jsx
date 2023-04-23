@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/authContext";
 import Messenger from "../imgs/messenger.png";
@@ -8,20 +8,23 @@ import Friends from "../imgs/friends.png";
 import AddUser from "../imgs/user.png";
 import Hide from "../imgs/hide.png";
 import View from "../imgs/view.png";
+import Chats from "../imgs/chat.png";
 import Contacts from "../imgs/contacts.png";
 import { v4 as uuidv4 } from "uuid";
 import { socket } from "../socket/socket";
-
 import { publicInstance } from "../config/axiosConfig";
 import { StoreContext } from "../contexts/StoreContext";
 import { storage } from "../config/firebase/firebase";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { ChatContext } from "../contexts/chatContext";
 
 function Navigate({ data }) {
     const { toast, newRequest, setNewRequest } = data;
-    const { store, dispatch, sortFriends } = useContext(StoreContext);
+    const { store, dispatch, sortFriends, sortChats } =
+        useContext(StoreContext);
     const { currentUser, setCurrentUser, signOut, refreshToken } =
         useContext(AuthContext);
+    const { setCurrentChat } = useContext(ChatContext);
     const navigate = useNavigate();
     const [showFriends, setShowFriends] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -44,6 +47,7 @@ function Navigate({ data }) {
     const [inputPasswordChange, setInputPasswordChange] = useState("");
     const [inputPasswordConfirm, setInputPasswordConfirm] = useState("");
     const [showContacts, setShowContacts] = useState(false);
+    const [showAllChat, setShowAllChat] = useState(false);
     const [currentTab, setCurrentTab] = useState(1);
 
     const logout = async () => {
@@ -395,7 +399,7 @@ function Navigate({ data }) {
                 user_id: currentUser.user_id,
                 friends: {
                     [friend.user_id]: {
-                        friend_id: friend.friend_id,
+                        friend_id: friend.user_id,
                         status: "accept",
                     },
                 },
@@ -415,7 +419,7 @@ function Navigate({ data }) {
                             user_id: currentUser.user_id,
                             friends: {
                                 [friend.user_id]: {
-                                    friend_id: friend.friend_id,
+                                    friend_id: friend.user_id,
                                     status: "accept",
                                 },
                             },
@@ -789,6 +793,114 @@ function Navigate({ data }) {
         }
     };
 
+    const handleDisplayChat = async (chat) => {
+        const id = chat.id;
+        if (store.chats && Object.keys(store.chats)?.includes(id))
+            return handleGetMessages(chat);
+        try {
+            const { data } = await publicInstance.put(
+                `user/${currentUser.user_id}/display_chat`,
+                {
+                    chat_id: id,
+                }
+            );
+            dispatch({
+                type: "DISPLAY_CHAT",
+                chat_id: id,
+            });
+            handleGetMessages(chat);
+        } catch (e) {
+            const data = e.response?.data;
+            if (data?.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.put(
+                            `user/${currentUser.user_id}/display_chat`,
+                            {
+                                chat_id: id,
+                            }
+                        );
+                        dispatch({
+                            type: "DISPLAY_CHAT",
+                            chat_id: id,
+                        });
+                        handleGetMessages(chat);
+                    })
+                    .catch((e) => {
+                        if (e == "Server error") {
+                            return toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            } else {
+                toast("Server error! Please try again.");
+            }
+        }
+    };
+
+    const handleGetMessages = async (chat) => {
+        if (
+            store.messages[chat.id] &&
+            Object.keys(store.messages[chat.id]).length > 20
+        ) {
+            return setCurrentChat(chat);
+        } else if (!store.messages[chat.id]) return setCurrentChat(chat);
+        try {
+            for (const [id, message] of Object.entries(
+                store.messages[chat.id]
+            )) {
+                if (message.chat_created) {
+                    return setCurrentChat(chat);
+                }
+            }
+
+            setCurrentChat(chat);
+            const { data } = await publicInstance.get(
+                `/message/${chat.id}/get_messages`
+            );
+            if (data.status == "success") {
+                dispatch({
+                    type: "ADD_MESSAGES",
+                    messages: data.elements,
+                });
+            } else toast("Something went wrong! Please try again.");
+        } catch (e) {
+            const data = e.response.data;
+            if (data.message == "jwt expired") {
+                refreshToken()
+                    .then(async (res) => {
+                        const { data } = await publicInstance.get(
+                            `/message/${chat.id}/get_messages`
+                        );
+                        if (data.status == "success") {
+                            dispatch({
+                                type: "ADD_MESSAGES",
+                                messages: data.elements,
+                            });
+                        } else toast("Something went wrong! Please try again.");
+                    })
+                    .catch((e) => {
+                        if (e == "Server error") {
+                            toast("Server error! Please try again.");
+                        } else {
+                            toast(
+                                "The login session has expired! Please login again."
+                            );
+                            setTimeout(() => {
+                                navigate("/login");
+                            }, 6000);
+                        }
+                    });
+            }
+        }
+    };
+
     return (
         <div className="navigate">
             <div className="first-item">
@@ -807,13 +919,22 @@ function Navigate({ data }) {
                     id={currentTab == 2 ? "target" : ""}
                 />
                 <img
-                    className="friends-icon"
+                    className="chats-icon"
                     onClick={() => {
                         setCurrentTab(3);
+                        setShowAllChat(true);
+                    }}
+                    src={Chats}
+                    id={currentTab == 3 ? "target" : ""}
+                />
+                <img
+                    className="friends-icon"
+                    onClick={() => {
+                        setCurrentTab(4);
                         getFriends();
                     }}
                     src={Friends}
-                    id={currentTab == 3 ? "target" : ""}
+                    id={currentTab == 4 ? "target" : ""}
                 />
                 {newRequest && <span className="new-request"></span>}
             </div>
@@ -1287,9 +1408,7 @@ function Navigate({ data }) {
                     {showConfirmSettings.toggle && (
                         <div className="confirm-delete">
                             <div className="confirm-wrapper">
-                                <span className="title">
-                                    Are you sure you want to change?
-                                </span>
+                                <span className="title">Are you sure?</span>
                                 <div className="content">
                                     <span
                                         className="item first"
@@ -1341,7 +1460,6 @@ function Navigate({ data }) {
                         <div className="friends-content">
                             {store.friends &&
                                 store.friends[currentUser.user_id] &&
-                                tabActive == 1 &&
                                 ((sortFriends(
                                     store.friends[currentUser.user_id]
                                 ).filter(
@@ -1423,7 +1541,6 @@ function Navigate({ data }) {
                                         }))}
                         </div>
                     </div>
-
                     <span
                         className="x-symbol"
                         onClick={(e) => {
@@ -1436,9 +1553,7 @@ function Navigate({ data }) {
                     {showConfirm.toggle && (
                         <div className="confirm-delete">
                             <div className="confirm-wrapper">
-                                <span className="title">
-                                    Are you sure you want to delete?
-                                </span>
+                                <span className="title">Are you sure?</span>
                                 <div className="content">
                                     <span
                                         className="item first"
@@ -1461,6 +1576,96 @@ function Navigate({ data }) {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+            {currentTab == 3 && showAllChat && (
+                <div className="all_chat-container">
+                    <div className="all_chat">
+                        <span className="title">All chat</span>
+                        <div className="all_chat-wrapper">
+                            {Object.keys({
+                                ...store.chats,
+                                ...store.hidden_chats,
+                            }).length > 0 &&
+                                sortChats({
+                                    ...store.chats,
+                                    ...store.hidden_chats,
+                                })
+                                    .reverse()
+                                    .map(([time, id]) => {
+                                        const data =
+                                            store.chats[id] ||
+                                            store.hidden_chats[id];
+                                        if (
+                                            !data.members.includes(
+                                                currentUser?.user_id
+                                            )
+                                        )
+                                            return;
+                                        let avatar = data.chat_avatar;
+                                        let name = data.name;
+
+                                        if (!data.is_group) {
+                                            avatar =
+                                                data.members[0] !=
+                                                currentUser.user_id
+                                                    ? store.users[
+                                                          data.members[0]
+                                                      ].avatar_url
+                                                    : store.users[
+                                                          data.members[1]
+                                                      ].avatar_url;
+                                            name =
+                                                data.members[0] !=
+                                                currentUser.user_id
+                                                    ? store.users[
+                                                          data.members[0]
+                                                      ].display_name
+                                                    : store.users[
+                                                          data.members[1]
+                                                      ].display_name;
+                                        } else {
+                                            avatar =
+                                                data.chat_avatar ||
+                                                "https://cdn3.vectorstock.com/i/1000x1000/24/27/people-group-avatar-character-vector-12392427.jpg";
+                                            name =
+                                                data.name ||
+                                                `${data.members.map(
+                                                    (id) =>
+                                                        `${store.users[id].display_name} `
+                                                )}`;
+                                        }
+
+                                        return (
+                                            <div
+                                                className="chat"
+                                                key={id}
+                                                onClick={() => {
+                                                    handleDisplayChat(data);
+                                                    setShowAllChat(false);
+                                                }}
+                                            >
+                                                <img
+                                                    className="chat-avatar"
+                                                    src={avatar}
+                                                />
+                                                <span className="chat-name">
+                                                    {name}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                        </div>
+                    </div>
+                    <span
+                        className="x-symbol"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowAllChat(false);
+                        }}
+                    >
+                        ✗
+                    </span>
                 </div>
             )}
         </div>

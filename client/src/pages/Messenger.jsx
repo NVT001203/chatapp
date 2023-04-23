@@ -130,12 +130,16 @@ function Messenger() {
                 });
             });
             socket.on("accepted-friend", ({ friend }) => {
+                console.log({
+                    friend,
+                    currentUser,
+                });
                 dispatch({
                     type: "ADD_FRIENDS",
                     user_id: currentUser.user_id,
                     friends: {
                         [friend.friend_id]: {
-                            friend_id: friend.user_id,
+                            friend_id: friend.friend_id,
                             status: "accept",
                         },
                     },
@@ -262,14 +266,17 @@ function Messenger() {
                             users,
                             friends,
                             friends_info,
+                            hidden_chats,
                         } = data.elements;
                         const chatsObj = {};
-                        const chatsArr = [];
                         for (const chat of chats) {
                             chatsObj[chat.id] = chat;
-                            chatsArr.push(chat.id);
                         }
                         const usersObj = {};
+                        const hiddenChatsObj = {};
+                        for (const chat of hidden_chats) {
+                            hiddenChatsObj[chat.id] = chat;
+                        }
                         for (const user of users) {
                             usersObj[user.user_id] = user;
                         }
@@ -312,6 +319,10 @@ function Messenger() {
                             chats: chatsObj,
                         });
                         dispatch({
+                            type: "ADD_HIDDEN_CHATS",
+                            hidden_chats: hiddenChatsObj,
+                        });
+                        dispatch({
                             type: "ADD_MESSAGES",
                             messages: messages,
                         });
@@ -337,12 +348,15 @@ function Messenger() {
                                     users,
                                     friends,
                                     friends_info,
+                                    hidden_chats,
                                 } = data.elements;
                                 const chatsObj = {};
-                                const chatsArr = [];
+                                const hiddenChatsObj = {};
+                                for (const chat of hidden_chats) {
+                                    hiddenChatsObj[chat.id] = chat;
+                                }
                                 for (const chat of chats) {
                                     chatsObj[chat.id] = chat;
-                                    chatsArr.push(chat.id);
                                 }
                                 const usersObj = {};
                                 for (const user of users) {
@@ -382,6 +396,10 @@ function Messenger() {
                                 dispatch({
                                     type: "ADD_CHATS",
                                     chats: chatsObj,
+                                });
+                                dispatch({
+                                    type: "ADD_HIDDEN_CHATS",
+                                    hidden_chats: hiddenChatsObj,
                                 });
                                 dispatch({
                                     type: "ADD_MESSAGES",

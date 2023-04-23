@@ -11,6 +11,7 @@ export const createMessage = async (
             photo_url varchar,
             file_url varchar,
             recall boolean default false,
+            reactions varchar[] default '{}',
             created_at timestamp);
         create index if not exists idxMessage_chat_id
         on messages(chat_id);
@@ -30,7 +31,7 @@ export const createMessage = async (
         insert into messages (chat_id, sender, text, photo_url, file_url, created_at)
         values ('${chat_id}', '${sender}', $1, $2,
         $3, current_timestamp)
-        returning id, chat_id, sender, text, photo_url, file_url, recall, created_at;
+        returning id, chat_id, sender, text, photo_url, file_url, recall, reactions, created_at;
     `,
         [text, photo_url, file_url]
     );
@@ -45,16 +46,15 @@ export const createMessage = async (
     return { message: new_message.rows[0] };
 };
 
-export const recallMessge = async (db, { message }) => {
+export const recallMessge = async (db, { message, member }) => {
     const messageRecall = await db.query(`
-        update messages set recall=true, text=null, photo_url=null,
-        file_url=null, created_at=current_timestamp where id='${message}'
-        returning id, chat_id, sender, text, photo_url, file_url, recall, created_at;
+        update messages set recall=true, 
+        text='message was removed', 
+        photo_url=null,
+        file_url=null, reactions='{}' where id='${message}'
+        returning id, chat_id, sender, text, photo_url, file_url, recall, reactions, created_at;
     `);
-    return {
-        recall: messageRecall.rowCount == 1 ? true : false,
-        created_at: messageRecall.rows[0].created_at,
-    };
+    return { message_updated: messageRecall.rows[0] };
 };
 
 export const getMessage = async (db, { message_id }) => {
@@ -112,6 +112,7 @@ export const getMessages = async (db, { chat_id }) => {
             , concat(m.chat_id, n.chat_id) chat_id, 
             notice, chat_created,
             concat(m.text, n.text) text,
+            m.reactions,
             concat(m.sender, n.sender) sender, 
             recall, photo_url, file_url, 
             concat(m.created_at, n.created_at)::timestamp with time zone created_at from messages m
@@ -213,4 +214,46 @@ export const deleteMessages = async (db, { chat_id }) => {
         if (e.message == `relation "messages" does not exist`) return true;
         else throw new Error(e.message);
     }
+};
+
+export const addReaction = async (db, { message_id, member, reaction }) => {
+    const old_reaction = await db.query(`
+        with reacts as (select unnest(reactions) as react from messages 
+        where id::text='${message_id}')
+        select react from reacts where react like '% ${member}';
+    `);
+    if (old_reaction.rows[0]) {
+        var message = await db.query(
+            `
+            update messages set reactions=array_replace(reactions, $1, $2) where id::text=$3 
+            returning *;
+        `,
+            [old_reaction.rows[0].react, `${reaction} ${member}`, message_id]
+        );
+    } else {
+        var message = await db.query(
+            `
+            update messages set reactions=array_append(reactions, $1) where id::text=$2
+            returning *;
+            `,
+            [`${reaction} ${member}`, message_id]
+        );
+    }
+    return message.rows[0];
+};
+
+export const removeReaction = async (db, { message_id, member }) => {
+    const old_reaction = await db.query(`
+        with reacts as (select unnest(reactions) as react from messages 
+        where id::text='${message_id}')
+        select react from reacts where react like '% ${member}';
+    `);
+    if (old_reaction.rows[0].react) {
+        const message = await db.query(
+            `update messages set reactions=array_remove(reactions, $1) where id::text=$2
+            returning *;`,
+            [old_reaction.rows[0].react, message_id]
+        );
+        return message.rows[0];
+    } else throw new Error("Reaction not exists");
 };
